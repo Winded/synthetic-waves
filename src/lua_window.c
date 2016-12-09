@@ -1,17 +1,18 @@
 #include <lua_window.h>
+#include <GL/glew.h>
 
-GLFWwindow *lua_window_towindow(lua_State *L, int index)
+window *lua_window_towindow(lua_State *L, int index)
 {
-    GLFWwindow** w = (GLFWwindow**)lua_touserdata(L, index);
+    window** w = (window**)lua_touserdata(L, index);
     if (w == NULL) luaL_typerror(L, index, "window");
     return *w;
 }
 
-GLFWwindow *lua_window_checkwindow(lua_State *L, int index)
+window *lua_window_checkwindow(lua_State *L, int index)
 {
-    GLFWwindow** w;
+    window** w;
     luaL_checktype(L, index, LUA_TUSERDATA);
-    w = (GLFWwindow**)luaL_checkudata(L, index, "window");
+    w = (window**)luaL_checkudata(L, index, "window");
     if (w == NULL) luaL_typerror(L, index, "window");
     return *w;
 }
@@ -22,43 +23,33 @@ int lua_window_create(lua_State *L)
     int height = luaL_checkinteger(L, 2);
     const char *title = luaL_checkstring(L, 3);
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    GLFWwindow* window = glfwCreateWindow(width, height, title, NULL, NULL);
-    if (!window) {
-        printf("FAIL window");
-        return 0;
-    }
+    window *w_handle = window_create(title, width, height);
 
-    glfwMakeContextCurrent(window);
-    gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
-    glfwSwapInterval(1);
-
-    GLFWwindow** w = (GLFWwindow**)lua_newuserdata(L, sizeof(GLFWwindow*));
+    window** w = (window**)lua_newuserdata(L, sizeof(window*));
     luaL_getmetatable(L, "window");
     lua_setmetatable(L, -2);
 
-    *w = window;
+    *w = w_handle;
 
     return 1;
 }
 
 int lua_window_shouldClose(lua_State *L)
 {
-    GLFWwindow *window = lua_window_checkwindow(L, 1);
-    int shouldClose = glfwWindowShouldClose(window);
+    window *w_handle = lua_window_checkwindow(L, 1);
+    int shouldClose = window_should_close(w_handle) ? 1 : 0;
     lua_pushboolean(L, shouldClose);
     return 1;
 }
 
 int lua_window_clear(lua_State *L)
 {
-    GLFWwindow *window = lua_window_checkwindow(L, 1);
+    window *w_handle = lua_window_checkwindow(L, 1);
     float r = luaL_checknumber(L, 2);
     float g = luaL_checknumber(L, 3);
     float b = luaL_checknumber(L, 4);
     float a = luaL_checknumber(L, 5);
-    (void)(window);
+    (void)(w_handle);
 
     glClearColor(r, g, b, a);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -68,23 +59,22 @@ int lua_window_clear(lua_State *L)
 
 int lua_window_swapBuffers(lua_State *L)
 {
-    GLFWwindow *window = lua_window_checkwindow(L, 1);
-    glfwSwapBuffers(window);
+    window *w_handle = lua_window_checkwindow(L, 1);
+    window_swap_buffers(w_handle);
     return 0;
 }
 
 int lua_window_pollEvents(lua_State *L)
 {
-    GLFWwindow *window = lua_window_checkwindow(L, 1);
-    (void)(window);
-    glfwPollEvents();
+    window *w_handle = lua_window_checkwindow(L, 1);
+    window_poll_events(w_handle);
     return 0;
 }
 
 int lua_window_destroy(lua_State *L)
 {
-    GLFWwindow *window = lua_window_checkwindow(L, 1);
-    glfwDestroyWindow(window);
+    window *w_handle = lua_window_checkwindow(L, 1);
+    window_destroy(&w_handle);
     lua_pushboolean(L, 1);
     return 1;
 }

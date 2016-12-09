@@ -1,20 +1,20 @@
 /*
  * lua_window.h
  *
- * A LUA interface for window handling (glfw)
+ * A LUA interface for window handling
  * */
 
 #ifndef lua_window_h
 #define lua_window_h
 
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include <SDL.h>
 #include <lua.h>
 #include <lauxlib.h>
+#include "window.h"
 
-GLFWwindow *lua_window_towindow(lua_State *L, int index);
+window *lua_window_towindow(lua_State *L, int index);
 
-GLFWwindow *lua_window_checkwindow(lua_State *L, int index);
+window *lua_window_checkwindow(lua_State *L, int index);
 
 int lua_window_create(lua_State *L);
 

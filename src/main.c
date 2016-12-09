@@ -4,8 +4,7 @@
 #include <lauxlib.h>
 #include <linmath.h>
 #include <lua_window.h>
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include <SDL.h>
 
 void print_mat4x4(mat4x4 m)
 {
@@ -49,7 +48,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    if(!glfwInit()) {
+    if(SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("FAIL init");
         return 0;
     }
@@ -60,7 +59,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    glfwTerminate();
+    SDL_Quit();
 
     lua_close(L);
 
