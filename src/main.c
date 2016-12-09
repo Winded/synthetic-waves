@@ -5,6 +5,25 @@
 #include <linmath.h>
 #include <lua_window.h>
 #include <SDL.h>
+#include <window.h>
+#include <graphics.h>
+
+static const char *test_vertex_shader = ""
+        "#version 330"
+
+        "in vec3 position;"
+        "in vec2 uvCoordinates;"
+
+        "out vec2 UV;"
+
+        "uniform mat4 WorldToViewportMatrix;"
+        "uniform mat4 LocalToWorldMatrix;"
+
+        "void main()"
+        "{"
+            "gl_Position = WorldToViewportMatrix * LocalToWorldMatrix * vec4(position.xyz, 1.0);"
+            "UV = uvCoordinates;"
+        "}";
 
 void print_mat4x4(mat4x4 m)
 {
@@ -53,11 +72,25 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    int result = lua_pcall(L, 0, LUA_MULTRET, 0);
-    if(result) {
-        fprintf(stderr, "Failed to run script: %s", lua_tostring(L, -1));
-        return 0;
+    //int result = lua_pcall(L, 0, LUA_MULTRET, 0);
+    //if(result) {
+    //    fprintf(stderr, "Failed to run script: %s", lua_tostring(L, -1));
+    //    return 0;
+    //}
+
+    window *w = window_create("Test", 640, 480);
+
+    graphics_context *g = graphics_context_create();
+
+    graphics_shader *shader = graphics_shader_create(g, test_vertex_shader, graphics_vertex_shader);
+
+    while(!window_should_close(w)) {
+        window_poll_events(w);
+        window_swap_buffers(w);
     }
+
+    graphics_context_destroy(&g);
+    window_destroy(&w);
 
     SDL_Quit();
 

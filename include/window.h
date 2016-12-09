@@ -1,7 +1,7 @@
 /*
  * window.h
  *
- * Cross-platform window API
+ * window handling module
  * */
 
 #ifndef window_h
