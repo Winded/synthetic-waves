@@ -124,13 +124,15 @@ int main(int argc, char *argv[])
     graphics_shader_param_set(g, "WorldToViewportMatrix", wToVPMat, 4 * 4);
     mat4x4 lToWMat;
     mat4x4_identity(lToWMat);
-    mat4x4_rotate_Z(lToWMat, lToWMat, 45.f);
-    graphics_shader_param_set(g, "LocalToWorldMatrix", lToWMat, 4 * 4);
     float baseColor[] = {1, 1, 1, 1};
     graphics_shader_param_set(g, "BaseColor", baseColor, 4);
 
     while(!window_should_close(w)) {
         window_poll_events(w);
+
+        float delta = window_get_delta_time(w);
+        mat4x4_rotate_Z(lToWMat, lToWMat, 45.f * DEG2RAD * delta);
+        graphics_shader_param_set(g, "LocalToWorldMatrix", lToWMat, 4 * 4);
 
         graphics_clear(g, clearColor);
 

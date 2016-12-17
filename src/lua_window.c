@@ -34,27 +34,20 @@ int lua_window_create(lua_State *L)
     return 1;
 }
 
+int lua_window_getDeltaTime(lua_State *L)
+{
+    window *w_handle = lua_window_checkwindow(L, 1);
+    float = window_get_delta_time(w_handle);
+    lua_pushnumber(L, deltaTime);
+    return 1;
+}
+
 int lua_window_shouldClose(lua_State *L)
 {
     window *w_handle = lua_window_checkwindow(L, 1);
     int shouldClose = window_should_close(w_handle) ? 1 : 0;
     lua_pushboolean(L, shouldClose);
     return 1;
-}
-
-int lua_window_clear(lua_State *L)
-{
-    window *w_handle = lua_window_checkwindow(L, 1);
-    float r = luaL_checknumber(L, 2);
-    float g = luaL_checknumber(L, 3);
-    float b = luaL_checknumber(L, 4);
-    float a = luaL_checknumber(L, 5);
-    (void)(w_handle);
-
-    glClearColor(r, g, b, a);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    return 0;
 }
 
 int lua_window_swapBuffers(lua_State *L)

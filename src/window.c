@@ -1,6 +1,7 @@
 #include "window.h"
 #include <stdio.h>
 #include <GL/glew.h>
+#include <time.h>
 
 window *window_create(const char *title, int width, int height)
 {
@@ -15,6 +16,7 @@ window *window_create(const char *title, int width, int height)
         return 0;
     }
 
+#ifdef USE_OPENGL
     SDL_GLContext ctx = SDL_GL_CreateContext(w);
 
     // Set our OpenGL version.
@@ -33,12 +35,18 @@ window *window_create(const char *title, int width, int height)
 
     glewExperimental = GL_TRUE;
     glewInit();
+#endif
 
     window *w_handle = (window*)calloc(1, sizeof(window));
     w_handle->sdl_window = w;
     w_handle->sdl_render_context = ctx;
     w_handle->should_close = false;
     return w_handle;
+}
+
+float window_get_delta_time(window *w_handle)
+{
+    return (float)((w_handle->time - w_handle->last_time) * 1000 / (double)SDL_GetPerformanceFrequency() * 0.001f);
 }
 
 void window_swap_buffers(window *w_handle)
@@ -52,7 +60,9 @@ void window_destroy(window **w_handle)
 {
     window *w = *w_handle;
 
+#ifdef USE_OPENGL
     SDL_GL_DeleteContext(w->sdl_render_context);
+#endif
     SDL_DestroyWindow(w->sdl_window);
 
     free(w);
@@ -62,6 +72,9 @@ void window_destroy(window **w_handle)
 
 void window_poll_events(window *w_handle)
 {
+    w_handle->last_time = w_handle->time;
+    w_handle->time = SDL_GetPerformanceCounter();
+
     SDL_Event event;
     while(SDL_PollEvent(&event)) {
         if(event.type == SDL_QUIT) {

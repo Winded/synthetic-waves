@@ -18,9 +18,9 @@ window *lua_window_checkwindow(lua_State *L, int index);
 
 int lua_window_create(lua_State *L);
 
-int lua_window_shouldClose(lua_State *L);
+int lua_window_getDeltaTime(lua_State *L);
 
-int lua_window_clear(lua_State *L);
+int lua_window_shouldClose(lua_State *L);
 
 int lua_window_swapBuffers(lua_State *L);
 
@@ -38,8 +38,8 @@ void lua_window_load(lua_State *L);
 
 static const luaL_reg lua_window_methods[] = {
     {"create", lua_window_create},
+    {"getDeltaTime", lua_window_getDeltaTime},
     {"shouldClose", lua_window_shouldClose},
-    {"clear", lua_window_clear},
     {"swapBuffers", lua_window_swapBuffers},
     {"pollEvents", lua_window_pollEvents},
     {"destroy", lua_window_destroy},

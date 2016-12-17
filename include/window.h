@@ -15,9 +15,13 @@ typedef struct window
         SDL_Window *sdl_window;
         void *sdl_render_context;
         bool should_close;
+        Uint64 last_time;
+        Uint64 time;
 } window;
 
 window *window_create(const char *title, int width, int height);
+
+float window_get_delta_time(window *w_handle);
 
 void window_swap_buffers(window *w_handle);
 
