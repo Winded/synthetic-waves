@@ -8,8 +8,8 @@
 #include <window.h>
 #include <graphics.h>
 
-static const char *test_vertex_shader = ""
-        "#version 330"
+static const char test_vertex_shader[] = ""
+        "#version 330\n"
 
         "in vec3 position;"
         "in vec2 uvCoordinates;"
@@ -24,6 +24,37 @@ static const char *test_vertex_shader = ""
             "gl_Position = WorldToViewportMatrix * LocalToWorldMatrix * vec4(position.xyz, 1.0);"
             "UV = uvCoordinates;"
         "}";
+
+static const char test_fragment_shader[] = ""
+        "#version 330\n"
+
+        "in vec2 UV;"
+
+        "out vec4 outColor;"
+
+        "uniform sampler2D Texture1;"
+        "uniform vec4 BaseColor;"
+
+        "void main()"
+        "{"
+            "outColor = texture2D(Texture1, UV) * BaseColor;"
+        "}";
+
+static const char test_texture[] = {
+    (char)255, (char)255, (char)255, (char)255
+};
+
+static const float test_vbo[] = {
+    -0.5f, 0.5f, 0, 0, 0,
+    0.5f, 0.5f, 0, 0, 1,
+    0.5f, -0.5f, 0, 1, 1,
+    -0.5f, -0.5f, 0, 1, 0,
+};
+
+static const int test_ebo[] = {
+    0, 1, 3,
+    1, 2, 3
+};
 
 void print_mat4x4(mat4x4 m)
 {
@@ -49,14 +80,6 @@ void openlibs(lua_State *L)
 
 int main(int argc, char *argv[])
 {
-    mat4x4 m, mr;
-    mat4x4_identity(m);
-
-    mat4x4_rotate_Z(mr, m, 90.f);
-
-    print_mat4x4(m);
-    print_mat4x4(mr);
-
     lua_State *L = luaL_newstate();
 
     openlibs(L);
@@ -82,10 +105,42 @@ int main(int argc, char *argv[])
 
     graphics_context *g = graphics_context_create();
 
-    graphics_shader *shader = graphics_shader_create(g, test_vertex_shader, graphics_vertex_shader);
+    graphics_shader *vertexShader = graphics_shader_create(g, test_vertex_shader, graphics_vertex_shader);
+    graphics_shader *fragmentShader = graphics_shader_create(g, test_fragment_shader, graphics_fragment_shader);
+    graphics_shader_program *program = graphics_shader_program_create(g, vertexShader, fragmentShader);
+
+    void *texData = malloc(1 * 1 * sizeof(char));
+    memcpy(texData, test_texture, 1 * 1 * sizeof(char));
+    graphics_texture *texture = graphics_texture_create(g, texData, 1, 1);
+
+    graphics_object *graphicsObject = graphics_object_create(g, test_vbo, 5 * 4, test_ebo, 3 * 2);
+    graphics_object_set_attribute(graphicsObject, 0, 3);
+    graphics_object_set_attribute(graphicsObject, 1, 2);
+
+    float clearColor[] = {0.5f, 0.5f, 0.5f, 1};
+
+    mat4x4 wToVPMat;
+    mat4x4_identity(wToVPMat);
+    graphics_shader_param_set(g, "WorldToViewportMatrix", wToVPMat, 4 * 4);
+    mat4x4 lToWMat;
+    mat4x4_identity(lToWMat);
+    mat4x4_rotate_Z(lToWMat, lToWMat, 45.f);
+    graphics_shader_param_set(g, "LocalToWorldMatrix", lToWMat, 4 * 4);
+    float baseColor[] = {1, 1, 1, 1};
+    graphics_shader_param_set(g, "BaseColor", baseColor, 4);
 
     while(!window_should_close(w)) {
         window_poll_events(w);
+
+        graphics_clear(g, clearColor);
+
+        graphics_use_program(g, program);
+        graphics_use_texture(g, texture);
+        graphics_use_object(g, graphicsObject);
+        graphics_use_shader_params(g);
+
+        graphics_draw(g);
+
         window_swap_buffers(w);
     }
 
