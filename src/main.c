@@ -113,9 +113,9 @@ int main(int argc, char *argv[])
     memcpy(texData, test_texture, 1 * 1 * sizeof(char));
     graphics_texture *texture = graphics_texture_create(g, texData, 1, 1);
 
-    graphics_object *graphicsObject = graphics_object_create(g, test_vbo, 5 * 4, test_ebo, 3 * 2);
-    graphics_object_set_attribute(graphicsObject, 0, 3);
-    graphics_object_set_attribute(graphicsObject, 1, 2);
+    graphics_vertex_array *va = graphics_vertex_array_create(g, test_vbo, 5 * 4, test_ebo, 3 * 2);
+    graphics_vertex_array_set_attribute(va, 0, 3);
+    graphics_vertex_array_set_attribute(va, 1, 2);
 
     float clearColor[] = {0.5f, 0.5f, 0.5f, 1};
 
@@ -127,6 +127,13 @@ int main(int argc, char *argv[])
     float baseColor[] = {1, 1, 1, 1};
     graphics_shader_param_set(g, "BaseColor", baseColor, 4);
 
+    graphics_object *gObj = graphics_object_create(g);
+    gObj->shader_program = program;
+    gObj->texture = texture;
+    gObj->vertex_array = va;
+
+    graphics_refresh_draw_order(g);
+
     while(!window_should_close(w)) {
         window_poll_events(w);
 
@@ -135,11 +142,6 @@ int main(int argc, char *argv[])
         graphics_shader_param_set(g, "LocalToWorldMatrix", lToWMat, 4 * 4);
 
         graphics_clear(g, clearColor);
-
-        graphics_use_program(g, program);
-        graphics_use_texture(g, texture);
-        graphics_use_object(g, graphicsObject);
-        graphics_use_shader_params(g);
 
         graphics_draw(g);
 

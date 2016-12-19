@@ -1,4 +1,5 @@
-#include "graphics.h"
+#include <graphics.h>
+#include <util.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -10,65 +11,44 @@ graphics_context *graphics_context_create()
     return ctx;
 }
 
-void graphics_context_clear_objects(graphics_context *context)
-{
-    graphics_object *nxt = context->objects;
-    while(nxt) {
-        graphics_object *cur = nxt;
-        nxt = nxt->next;
-        graphics_object_destroy(context, cur);
-    }
-}
-
-void graphics_context_clear_textures(graphics_context *context)
-{
-    graphics_texture *nxt = context->textures;
-    while(nxt) {
-        graphics_texture *cur = nxt;
-        nxt = nxt->next;
-        graphics_texture_destroy(context, cur);
-    }
-}
-
-void graphics_context_clear_shader_params(graphics_context *context)
-{
-    graphics_shader_param *nxt = context->shader_params;
-    while(nxt) {
-        graphics_shader_param *cur = nxt;
-        nxt = nxt->next;
-        graphics_shader_param_delete(context, cur->name);
-    }
-}
-
-void graphics_context_clear_shader_programs(graphics_context *context)
-{
-    graphics_shader_program *nxt = context->shader_programs;
-    while(nxt) {
-        graphics_shader_program *cur = nxt;
-        nxt = nxt->next;
-        graphics_shader_program_destroy(context, cur);
-    }
-}
-
-void graphics_context_clear_shaders(graphics_context *context)
-{
-    graphics_shader *nxt = context->shaders;
-    while(nxt) {
-        graphics_shader *cur = nxt;
-        nxt = nxt->next;
-        graphics_shader_destroy(context, cur);
-    }
-}
-
 void graphics_context_destroy(graphics_context **context)
 {
     graphics_context *ctx = *context;
 
-    graphics_context_clear_objects(ctx);
-    graphics_context_clear_textures(ctx);
-    graphics_context_clear_shader_params(ctx);
-    graphics_context_clear_shader_programs(ctx);
-    graphics_context_clear_shaders(ctx);
+    for(int i = 0; i < ARRSIZE_RESERVE; i++) {
+        if(ctx->shaders[i]) {
+            for(int ii = 0; ii < ARRSIZE_SHADER; ii++) {
+                graphics_shader *s = &(ctx->shaders[i][ii]);
+                if(s->code)
+                    free(s->code);
+            }
+            free(ctx->shaders[i]);
+        }
+        if(ctx->shader_programs[i])
+            free(ctx->shader_programs[i]);
+        if(ctx->shader_params[i])
+            free(ctx->shader_params[i]);
+        if(ctx->textures[i]) {
+            for(int ii = 0; ii < ARRSIZE_SHADER; ii++) {
+                graphics_texture *t = &(ctx->textures[i][ii]);
+                if(t->data)
+                    free(t->data);
+            }
+            free(ctx->textures[i]);
+        }
+        if(ctx->vertex_arrays[i]) {
+            for(int ii = 0; ii < ARRSIZE_SHADER; ii++) {
+                graphics_vertex_array *va = &(ctx->vertex_arrays[i][ii]);
+                if(va->vertex_buffer)
+                    free(va->vertex_buffer);
+                if(va->element_buffer)
+                    free(va->element_buffer);
+            }
+            free(ctx->vertex_arrays[i]);
+        }
+        if(ctx->objects[i])
+            free(ctx->objects[i]);
+    }
 
     free(ctx);
     *context = 0;
@@ -76,21 +56,10 @@ void graphics_context_destroy(graphics_context **context)
 
 graphics_shader *graphics_shader_create(graphics_context *context, const char *code, graphics_shader_type type)
 {
-    graphics_shader *shader = (graphics_shader*)calloc(1, sizeof(graphics_shader));
+    graphics_shader *shader = (graphics_shader*)util_reserve_item(context->shaders, ARRSIZE_RESERVE, ARRSIZE_SHADER, sizeof(graphics_shader));
+
     shader->type = type;
     shader->code = strcpy((char*)calloc(1, strlen(code) + 1), code);
-
-    if(!context->shaders) {
-        context->shaders = shader;
-    }
-    else {
-        graphics_shader *s = context->shaders;
-        while(s->next) {
-            s = s->next;
-        }
-        shader->prev = s;
-        s->next = shader;
-    }
 
 #ifdef USE_OPENGL
     GLenum stype = GL_VERTEX_SHADER;
@@ -121,46 +90,26 @@ graphics_shader *graphics_shader_create(graphics_context *context, const char *c
     return shader;
 }
 
-void graphics_shader_destroy(graphics_context *context, graphics_shader *shader)
+void graphics_shader_destroy(graphics_shader *shader)
 {
+    if(!shader->is_valid) return;
+
     if(shader->handle) {
 #ifdef USE_OPENGL
         glDeleteShader(shader->handle);
 #endif
     }
 
-    if(context->shaders == shader) {
-        context->shaders = shader->next ? shader->next : 0;
-    }
-
-    if(shader->next) {
-        shader->next->prev = shader->prev;
-    }
-    if(shader->prev) {
-        shader->prev->next = shader->next;
-    }
-
     free(shader->code);
-    free(shader);
+    memset(shader, 0, sizeof(graphics_shader));
 }
 
 graphics_shader_program *graphics_shader_program_create(graphics_context *context, graphics_shader *vertex_shader, graphics_shader *fragment_shader)
 {
-    graphics_shader_program *program = (graphics_shader_program*)calloc(1, sizeof(graphics_shader_program));
+    graphics_shader_program *program = (graphics_shader_program*)util_reserve_item(context->shader_programs, ARRSIZE_RESERVE, ARRSIZE_SHADER_PROGRAM,
+                                                                                   sizeof(graphics_shader_program));
 
-    if(!context->shader_programs) {
-        context->shader_programs = program;
-    }
-    else {
-        graphics_shader_program *p = context->shader_programs;
-        while(p->next) {
-            p = p->next;
-        }
-        program->prev = p;
-        p->next = program;
-    }
-
-    assert(vertex_shader && fragment_shader && vertex_shader->type == graphics_vertex_shader && fragment_shader->type == graphics_fragment_shader);
+    assert(vertex_shader->is_valid && fragment_shader->is_valid && vertex_shader->type == graphics_vertex_shader && fragment_shader->type == graphics_fragment_shader);
     program->vertex_shader = vertex_shader;
     program->fragment_shader = fragment_shader;
 
@@ -183,43 +132,36 @@ graphics_shader_program *graphics_shader_program_create(graphics_context *contex
     return program;
 }
 
-void graphics_shader_program_destroy(graphics_context *context, graphics_shader_program *program)
+void graphics_shader_program_destroy(graphics_shader_program *program)
 {
+    if(!program->is_valid) return;
+
     if(program->handle) {
 #ifdef USE_OPENGL
         glDeleteProgram(program->handle);
 #endif
     }
 
-    if(context->shader_programs == program) {
-        context->shader_params = program->next;
-    }
-
-    if(program->next) {
-        program->next->prev = program->prev;
-    }
-    if(program->prev) {
-        program->prev->next = program->next;
-    }
-
-    free(program);
+    memset(program, 0, sizeof(graphics_shader_program));
 }
 
 int graphics_shader_param_get(graphics_context *context, const char *name, float *value, int *size)
 {
     graphics_shader_param *param = 0;
-    graphics_shader_param *p = context->shader_params;
-    while(p) {
-        if(strcmp(p->name, name) == 0) {
-            param = p;
-            break;
+    for(int i = 0; i < ARRSIZE_RESERVE; i++) {
+        if(param || !context->shader_params[i]) break;
+        for(int ii = 0; ii < ARRSIZE_SHADER_PARAM; ii++) {
+            graphics_shader_param *p = &(context->shader_params[i][ii]);
+            if(p->is_valid && p->name == name) {
+                param = p;
+                break;
+            }
         }
-        p = p->next;
     }
 
     if(param) {
-        memcpy(value, p->value, p->size * sizeof(float));
-        *size = p->size;
+        memcpy(value, param->value, param->size * sizeof(float));
+        *size = param->size;
         return 1;
     }
     else {
@@ -231,30 +173,21 @@ void graphics_shader_param_set(graphics_context *context, const char *name, floa
 {
     // Check if we already have this parameter
     graphics_shader_param *param = 0;
-    graphics_shader_param *p = context->shader_params;
-    while(p) {
-        if(strcmp(p->name, name) == 0) {
-            param = p;
-            break;
+    for(int i = 0; i < ARRSIZE_RESERVE; i++) {
+        if(param || !context->shader_params[i]) break;
+        for(int ii = 0; ii < ARRSIZE_SHADER_PARAM; ii++) {
+            graphics_shader_param *p = &(context->shader_params[i][ii]);
+            if(p->is_valid && p->name == name) {
+                param = p;
+                break;
+            }
         }
-        p = p->next;
     }
 
     // if not, add it to our param list
     if(!param) {
-        param = (graphics_shader_param*)calloc(1, sizeof(graphics_shader_param));
+        param = (graphics_shader_param*)util_reserve_item(context->shader_params, ARRSIZE_RESERVE, ARRSIZE_SHADER_PARAM, sizeof(graphics_shader_param));
         strcpy(param->name, name);
-        if(!context->shader_params) {
-            context->shader_params = param;
-        }
-        else {
-            p = context->shader_params;
-            while(p->next) {
-                p = p->next;
-            }
-            p->next = param;
-            param->prev = p;
-        }
     }
 
     memcpy(param->value, value, size * sizeof(float));
@@ -264,49 +197,28 @@ void graphics_shader_param_set(graphics_context *context, const char *name, floa
 void graphics_shader_param_delete(graphics_context *context, const char *name)
 {
     graphics_shader_param *param = 0;
-    graphics_shader_param *p = context->shader_params;
-    while(p) {
-        if(strcmp(p->name, name) == 0) {
-            param = p;
-            break;
+    for(int i = 0; i < ARRSIZE_RESERVE; i++) {
+        if(param || !context->shader_params[i]) break;
+        for(int ii = 0; ii < ARRSIZE_SHADER_PARAM; ii++) {
+            graphics_shader_param *p = &(context->shader_params[i][ii]);
+            if(p->is_valid && p->name == name) {
+                param = p;
+                break;
+            }
         }
-        p = p->next;
     }
 
     if(param) {
-        if(context->shader_params == param) {
-            context->shader_params = param->next;
-        }
-
-        if(param->next) {
-            param->next->prev = param->prev;
-        }
-        if(param->prev) {
-            param->prev->next = param->next;
-        }
-
-        free(param);
+        memset(param, 0, sizeof(graphics_shader_param));
     }
 }
 
 graphics_texture *graphics_texture_create(graphics_context *context, const void *data, int width, int height)
 {
-    graphics_texture *texture = (graphics_texture*)calloc(1, sizeof(graphics_texture));
+    graphics_texture *texture = (graphics_texture*)util_reserve_item(context->textures, ARRSIZE_RESERVE, ARRSIZE_TEXTURE, sizeof(graphics_texture));
     texture->data = data;
     texture->width = width;
     texture->height = height;
-
-    if(!context->textures) {
-        context->textures = texture;
-    }
-    else {
-        graphics_texture *t = context->textures;
-        while(t->next) {
-            t = t->next;
-        }
-        t->next = texture;
-        texture->prev = t;
-    }
 
 #ifdef USE_OPENGL
     GLuint glTex;
@@ -331,32 +243,23 @@ graphics_texture *graphics_texture_create(graphics_context *context, const void 
     return texture;
 }
 
-void graphics_texture_destroy(graphics_context *context, graphics_texture *texture)
+void graphics_texture_destroy(graphics_texture *texture)
 {
+    if(!texture->is_valid) return;
+
     if(texture->handle) {
 #ifdef USE_OPENGL
         glDeleteTextures(1, &texture->handle);
 #endif
     }
 
-    if(context->textures == texture) {
-        context->textures = texture->next;
-    }
-
-    if(texture->next) {
-        texture->next->prev = texture->prev;
-    }
-    if(texture->prev) {
-        texture->prev->next = texture->next;
-    }
-
     free(texture->data);
-    free(texture);
+    memset(texture, 0, sizeof(graphics_texture));
 }
 
-graphics_object *graphics_object_create(graphics_context *context, float *vertex_buffer, int vertex_buffer_size, int *element_buffer, int element_buffer_size)
+graphics_vertex_array *graphics_vertex_array_create(graphics_context *context, float *vertex_buffer, int vertex_buffer_size, int *element_buffer, int element_buffer_size)
 {
-    graphics_object *object = (graphics_object*)calloc(1, sizeof(graphics_object));
+    graphics_vertex_array *object = (graphics_vertex_array*)util_reserve_item(context->vertex_arrays, ARRSIZE_RESERVE, ARRSIZE_VA, sizeof(graphics_vertex_array));
 
     object->vertex_buffer = malloc(vertex_buffer_size * sizeof(float));
     memcpy(object->vertex_buffer, vertex_buffer, vertex_buffer_size * sizeof(float));
@@ -365,18 +268,6 @@ graphics_object *graphics_object_create(graphics_context *context, float *vertex
     object->element_buffer = malloc(element_buffer_size * sizeof(int));
     memcpy(object->element_buffer, element_buffer, element_buffer_size * sizeof(int));
     object->element_buffer_size = element_buffer_size;
-
-    if(!context->objects) {
-        context->objects = object;
-    }
-    else {
-        graphics_object *o = context->objects;
-        while(o->next) {
-            o = o->next;
-        }
-        o->next = object;
-        object->prev = o;
-    }
 
 #ifdef USE_OPENGL
     GLuint vbo, ebo;
@@ -404,29 +295,31 @@ graphics_object *graphics_object_create(graphics_context *context, float *vertex
     return object;
 }
 
-void graphics_object_update(graphics_object *object, float *vertex_buffer, int vertex_buffer_size, int *element_buffer, int element_buffer_size)
+void graphics_vertex_array_update(graphics_vertex_array *vertex_array, float *vertex_buffer, int vertex_buffer_size, int *element_buffer, int element_buffer_size)
 {
+    if(!vertex_array->is_valid) return;
+
     if(vertex_buffer && vertex_buffer_size > 0) {
-        if(vertex_buffer_size != object->vertex_buffer_size) {
-            object->vertex_buffer = realloc(object->vertex_buffer, vertex_buffer_size);
+        if(vertex_buffer_size != vertex_array->vertex_buffer_size) {
+            vertex_array->vertex_buffer = realloc(vertex_array->vertex_buffer, vertex_buffer_size);
         }
-        memcpy(object->vertex_buffer, vertex_buffer, vertex_buffer_size * sizeof(float));
-        object->vertex_buffer_size = vertex_buffer_size;
+        memcpy(vertex_array->vertex_buffer, vertex_buffer, vertex_buffer_size * sizeof(float));
+        vertex_array->vertex_buffer_size = vertex_buffer_size;
     }
     if(element_buffer && element_buffer_size > 0) {
-        if(element_buffer_size != object->element_buffer_size) {
-            object->element_buffer = realloc(object->element_buffer, element_buffer_size);
+        if(element_buffer_size != vertex_array->element_buffer_size) {
+            vertex_array->element_buffer = realloc(vertex_array->element_buffer, element_buffer_size);
         }
-        memcpy(object->element_buffer, element_buffer, element_buffer_size * sizeof(float));
-        object->element_buffer_size = element_buffer_size;
+        memcpy(vertex_array->element_buffer, element_buffer, element_buffer_size * sizeof(float));
+        vertex_array->element_buffer_size = element_buffer_size;
     }
 
 #ifdef USE_OPENGL
-    glBindBuffer(GL_ARRAY_BUFFER, object->vbo_handle);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, object->ebo_handle);
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_array->vbo_handle);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_array->ebo_handle);
 
-    glBufferData(GL_ARRAY_BUFFER, object->vertex_buffer_size * sizeof(float), object->vertex_buffer, GL_STATIC_DRAW);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, object->element_buffer_size * sizeof(int), object->element_buffer, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertex_array->vertex_buffer_size * sizeof(float), vertex_array->vertex_buffer, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, vertex_array->element_buffer_size * sizeof(int), vertex_array->element_buffer, GL_STATIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -438,182 +331,230 @@ void graphics_object_update(graphics_object *object, float *vertex_buffer, int v
 #endif
 }
 
-void graphics_object_set_attribute(graphics_object *object, int id, int size)
+void graphics_vertex_array_set_attribute(graphics_vertex_array *vertex_array, int id, int size)
 {
-    graphics_object_attribute *attribute = 0;
-    graphics_object_attribute *a = object->attributes;
-    while(a) {
-        if(a->id == id) {
-            attribute = a;
+    graphics_vertex_array_attribute *attribute = 0;
+    for(int i = 0; i < ARRSIZE_VA_ATTRIBUTE; i++) {
+        if(vertex_array->attributes[i].is_valid && vertex_array->attributes[i].id == id) {
+            attribute = &(vertex_array->attributes[i]);
             break;
         }
-        a = a->next;
     }
 
     if(!attribute) {
-        attribute = (graphics_object_attribute*)calloc(1, sizeof(graphics_object_attribute));
-        attribute->id = id;
-        if(!object->attributes) {
-            object->attributes = attribute;
-        }
-        else {
-            a = object->attributes;
-            while(a->next) {
-                a = a->next;
+        for(int i = 0; i < ARRSIZE_VA_ATTRIBUTE; i++) {
+            if(!vertex_array->attributes[i].is_valid) {
+                attribute = &(vertex_array->attributes[i]);
+                attribute->is_valid = 1;
+                break;
             }
-            a->next = attribute;
-            attribute->prev = a;
         }
+        attribute->id = id;
     }
 
     attribute->size = size;
 }
 
-void graphics_object_destroy(graphics_context *context, graphics_object *object)
+void graphics_vertex_array_destroy(graphics_vertex_array *vertex_array)
 {
-    if(object->vao_handle) {
+    if(vertex_array->vao_handle) {
 #ifdef USE_OPENGL
-        glDeleteVertexArrays(1, &object->vao_handle);
+        glDeleteVertexArrays(1, &vertex_array->vao_handle);
 #endif
     }
-    if(object->vbo_handle) {
+    if(vertex_array->vbo_handle) {
 #ifdef USE_OPENGL
-        glDeleteBuffers(1, &object->vbo_handle);
+        glDeleteBuffers(1, &vertex_array->vbo_handle);
 #endif
     }
-    if(object->ebo_handle) {
+    if(vertex_array->ebo_handle) {
 #ifdef USE_OPENGL
-        glDeleteBuffers(1, &object->ebo_handle);
+        glDeleteBuffers(1, &vertex_array->ebo_handle);
 #endif
     }
 
-    if(context->objects == object) {
-        context->objects = object->next;
-    }
-
-    if(object->next) {
-        object->next->prev = object->prev;
-    }
-    if(object->prev) {
-        object->prev->next = object->next;
-    }
-
-    free(object->vertex_buffer);
-    free(object->element_buffer);
-    free(object);
+    free(vertex_array->vertex_buffer);
+    free(vertex_array->element_buffer);
+    memset(vertex_array, 0, sizeof(graphics_vertex_array));
 }
 
-void graphics_use_program(graphics_context *context, graphics_shader_program *program)
+graphics_object *graphics_object_create(graphics_context *context)
 {
-    context->current_program = program;
-#ifdef USE_OPENGL
-    glUseProgram(program->handle);
-
-    GLenum err = glGetError();
-    if(err != GL_FALSE) {
-        fprintf(stderr, "OpenGL program bind error: %i\n", err);
-    }
-#endif
+    graphics_object *object = (graphics_object*)util_reserve_item(context->objects, ARRSIZE_RESERVE, ARRSIZE_OBJECT, sizeof(graphics_object));
+    return object;
 }
 
-void graphics_use_texture(graphics_context *context, graphics_texture *texture)
+void graphics_object_shader_param_get(graphics_object *object, const char *name, float *value, int *size)
 {
-#ifdef USE_OPENGL
-    glBindTexture(GL_TEXTURE_2D, texture->handle);
-
-    GLenum err = glGetError();
-    if(err != GL_FALSE) {
-        fprintf(stderr, "OpenGL texture bind error: %i\n", err);
-    }
-#endif
+    // TODO
 }
 
-void graphics_use_shader_params(graphics_context *context)
+void graphics_object_shader_param_set(graphics_object *object, const char *name, float *value, int size)
 {
-#ifdef USE_OPENGL
-    graphics_shader_param *param = context->shader_params;
-    while(param) {
-        int location = glGetUniformLocation(context->current_program->handle, param->name);
-        if(location != -1) {
-            switch(param->size) {
-            case 1:
-                glUniform1fv(location, 1, param->value);
-                break;
-            case 2:
-                glUniform2fv(location, 1, param->value);
-                break;
-            case 3:
-                glUniform3fv(location, 1, param->value);
-                break;
-            case 4:
-                glUniform4fv(location, 1, param->value);
-                break;
-            case 4 * 4:
-                glUniformMatrix4fv(location, 1, GL_FALSE, param->value);
-                break;
-            default:
-                assert("Unsupported param size" && 0);
-                break;
+    // TODO
+}
+
+void graphics_object_destroy(graphics_object *object)
+{
+    memset(object, 0, sizeof(graphics_object));
+}
+
+void graphics_refresh_draw_order(graphics_context *context)
+{
+    memset(context->object_draw_array, 0, sizeof(graphics_object*) * ARRSIZE_RESERVE * ARRSIZE_OBJECT);
+
+    int idx = 0;
+    for(int i = 0; i < ARRSIZE_RESERVE; i++) {
+        if(!context->objects[i]) break;
+        for(int ii = 0; ii < ARRSIZE_OBJECT; ii++) {
+            graphics_object *object = &(context->objects[i][ii]);
+            if(object->is_valid) {
+                context->object_draw_array[idx] = object;
+                idx++;
             }
         }
-
-        GLenum err = glGetError();
-        if(err != GL_FALSE) {
-            fprintf(stderr, "OpenGL shader param error: %i\n", err);
-        }
-
-        param = param->next;
     }
-#endif
-}
-
-void graphics_use_object(graphics_context *context, graphics_object *object)
-{
-    context->current_object = object;
-
-#ifdef USE_OPENGL
-    if(object) {
-        glBindBuffer(GL_ARRAY_BUFFER, object->vbo_handle);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, object->ebo_handle);
-
-        GLenum err = glGetError();
-        if(err != GL_FALSE) {
-            fprintf(stderr, "OpenGL object error: %i\n", err);
-        }
-
-        int totalAttribSize = 0;
-        graphics_object_attribute *attribute = object->attributes;
-        while(attribute) {
-            totalAttribSize += attribute->size;
-            attribute = attribute->next;
-        }
-        attribute = object->attributes;
-        int offset = 0;
-        while(attribute) {
-            glVertexAttribPointer(attribute->id, attribute->size, GL_FLOAT, GL_FALSE, totalAttribSize * sizeof(float), (GLvoid*)(offset * sizeof(float)));
-            glEnableVertexAttribArray(attribute->id);
-            offset += attribute->size;
-            attribute = attribute->next;
-        }
-
-        err = glGetError();
-        if(err != GL_FALSE) {
-            fprintf(stderr, "OpenGL object error: %i\n", err);
-        }
-    }
-    else {
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    }
-#endif
 }
 
 void graphics_draw(graphics_context *context)
 {
-    if(!context->current_object) return;
+    // Draw objects
+    for(int i = 0; i < ARRSIZE_RESERVE * ARRSIZE_OBJECT; i++) {
+        graphics_object *object = context->object_draw_array[i];
+        if(!object) break;
+        if(!object->is_valid ||
+                !object->shader_program || !object->shader_program->is_valid ||
+                !object->texture || !object->texture->is_valid ||
+                !object->vertex_array || !object->vertex_array->is_valid)
+            continue;
 
 #ifdef USE_OPENGL
-    glDrawElements(GL_TRIANGLES, context->current_object->element_buffer_size, GL_UNSIGNED_INT, 0);
+
+        GLenum err;
+
+        // Apply shader program
+        glUseProgram(object->shader_program->handle);
+        err = glGetError();
+        if(err != GL_FALSE) {
+            fprintf(stderr, "OpenGL program bind error: %i\n", err);
+        }
+
+        // Apply texture
+        glBindTexture(GL_TEXTURE_2D, object->texture->handle);
+        err = glGetError();
+        if(err != GL_FALSE) {
+            fprintf(stderr, "OpenGL texture bind error: %i\n", err);
+        }
+
+        // Apply global shader params
+        for(int ii = 0; ii < ARRSIZE_RESERVE; ii++) {
+            if(!context->shader_params[ii]) break;
+            for(int ii2 = 0; ii2 < ARRSIZE_SHADER_PARAM; ii2++) {
+                graphics_shader_param *param = &(context->shader_params[ii][ii2]);
+                if(!param->is_valid) continue;
+
+                int location = glGetUniformLocation(object->shader_program->handle, param->name);
+                if(location != -1) {
+                    switch(param->size) {
+                    case 1:
+                        glUniform1fv(location, 1, param->value);
+                        break;
+                    case 2:
+                        glUniform2fv(location, 1, param->value);
+                        break;
+                    case 3:
+                        glUniform3fv(location, 1, param->value);
+                        break;
+                    case 4:
+                        glUniform4fv(location, 1, param->value);
+                        break;
+                    case 4 * 4:
+                        glUniformMatrix4fv(location, 1, GL_FALSE, param->value);
+                        break;
+                    default:
+                        assert("Unsupported param size" && 0);
+                        break;
+                    }
+                }
+
+                err = glGetError();
+                if(err != GL_FALSE) {
+                    fprintf(stderr, "OpenGL shader param error: %i\n", err);
+                }
+            }
+        }
+
+        // Apply object shader params
+        for(int ii2 = 0; ii2 < ARRSIZE_SHADER_PARAM; ii2++) {
+            graphics_shader_param *param = &(object->shader_params[ii2]);
+            if(!param->is_valid) continue;
+
+            int location = glGetUniformLocation(object->shader_program->handle, param->name);
+            if(location != -1) {
+                switch(param->size) {
+                case 1:
+                    glUniform1fv(location, 1, param->value);
+                    break;
+                case 2:
+                    glUniform2fv(location, 1, param->value);
+                    break;
+                case 3:
+                    glUniform3fv(location, 1, param->value);
+                    break;
+                case 4:
+                    glUniform4fv(location, 1, param->value);
+                    break;
+                case 4 * 4:
+                    glUniformMatrix4fv(location, 1, GL_FALSE, param->value);
+                    break;
+                default:
+                    assert("Unsupported param size" && 0);
+                    break;
+                }
+            }
+
+            err = glGetError();
+            if(err != GL_FALSE) {
+                fprintf(stderr, "OpenGL shader param error: %i\n", err);
+            }
+        }
+
+        // Bind vertex array
+        glBindBuffer(GL_ARRAY_BUFFER, object->vertex_array->vbo_handle);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, object->vertex_array->ebo_handle);
+        err = glGetError();
+        if(err != GL_FALSE) {
+            fprintf(stderr, "OpenGL object error: %i\n", err);
+        }
+        int totalAttribSize = 0;
+        for(int ii = 0; ii < ARRSIZE_VA_ATTRIBUTE; ii++) {
+            graphics_vertex_array_attribute *attribute = &(object->vertex_array->attributes[ii]);
+            if(!attribute->is_valid) continue;
+            totalAttribSize += attribute->size;
+        }
+        int offset = 0;
+        for(int ii = 0; ii < ARRSIZE_VA_ATTRIBUTE; ii++) {
+            graphics_vertex_array_attribute *attribute = &(object->vertex_array->attributes[ii]);
+            if(!attribute->is_valid) continue;
+            glVertexAttribPointer(attribute->id, attribute->size, GL_FLOAT, GL_FALSE, totalAttribSize * sizeof(float), (GLvoid*)(offset * sizeof(float)));
+            glEnableVertexAttribArray(attribute->id);
+            offset += attribute->size;
+        }
+        err = glGetError();
+        if(err != GL_FALSE) {
+            fprintf(stderr, "OpenGL object error: %i\n", err);
+        }
+
+        // Draw
+        glDrawElements(GL_TRIANGLES, object->vertex_array->element_buffer_size, GL_UNSIGNED_INT, 0);
+#endif
+    }
+
+#ifdef USE_OPENGL
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glUseProgram(0);
 #endif
 }
 

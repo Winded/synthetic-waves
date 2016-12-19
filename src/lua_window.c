@@ -37,7 +37,7 @@ int lua_window_create(lua_State *L)
 int lua_window_getDeltaTime(lua_State *L)
 {
     window *w_handle = lua_window_checkwindow(L, 1);
-    float = window_get_delta_time(w_handle);
+    float deltaTime = window_get_delta_time(w_handle);
     lua_pushnumber(L, deltaTime);
     return 1;
 }
