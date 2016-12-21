@@ -35,6 +35,8 @@ window *window_create(const char *title, int width, int height)
 
     glewExperimental = GL_TRUE;
     glewInit();
+
+    glViewport(0, 0, width, height);
 #endif
 
     window *w_handle = (window*)calloc(1, sizeof(window));
@@ -79,6 +81,13 @@ void window_poll_events(window *w_handle)
     while(SDL_PollEvent(&event)) {
         if(event.type == SDL_QUIT) {
             w_handle->should_close = true;
+        }
+        else if(event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_RESIZED) {
+            int width, height;
+            SDL_GetWindowSize(w_handle->sdl_window, &width, &height);
+#ifdef USE_OPENGL
+            glViewport(0, 0, width, height);
+#endif
         }
     }
 }

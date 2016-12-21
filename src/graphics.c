@@ -56,7 +56,7 @@ void graphics_context_destroy(graphics_context **context)
 
 graphics_shader *graphics_shader_create(graphics_context *context, const char *code, graphics_shader_type type)
 {
-    graphics_shader *shader = (graphics_shader*)util_reserve_item(context->shaders, ARRSIZE_RESERVE, ARRSIZE_SHADER, sizeof(graphics_shader));
+    graphics_shader *shader = (graphics_shader*)util_reserve_item_exp(context->shaders, ARRSIZE_RESERVE, ARRSIZE_SHADER, sizeof(graphics_shader));
 
     shader->type = type;
     shader->code = strcpy((char*)calloc(1, strlen(code) + 1), code);
@@ -106,8 +106,8 @@ void graphics_shader_destroy(graphics_shader *shader)
 
 graphics_shader_program *graphics_shader_program_create(graphics_context *context, graphics_shader *vertex_shader, graphics_shader *fragment_shader)
 {
-    graphics_shader_program *program = (graphics_shader_program*)util_reserve_item(context->shader_programs, ARRSIZE_RESERVE, ARRSIZE_SHADER_PROGRAM,
-                                                                                   sizeof(graphics_shader_program));
+    graphics_shader_program *program = (graphics_shader_program*)util_reserve_item_exp(context->shader_programs, ARRSIZE_RESERVE, ARRSIZE_SHADER_PROGRAM,
+                                                                                       sizeof(graphics_shader_program));
 
     assert(vertex_shader->is_valid && fragment_shader->is_valid && vertex_shader->type == graphics_vertex_shader && fragment_shader->type == graphics_fragment_shader);
     program->vertex_shader = vertex_shader;
@@ -177,7 +177,7 @@ void graphics_shader_param_set(graphics_context *context, const char *name, floa
         if(param || !context->shader_params[i]) break;
         for(int ii = 0; ii < ARRSIZE_SHADER_PARAM; ii++) {
             graphics_shader_param *p = &(context->shader_params[i][ii]);
-            if(p->is_valid && p->name == name) {
+            if(p->is_valid && strcmp(p->name, name) == 0) {
                 param = p;
                 break;
             }
@@ -186,7 +186,7 @@ void graphics_shader_param_set(graphics_context *context, const char *name, floa
 
     // if not, add it to our param list
     if(!param) {
-        param = (graphics_shader_param*)util_reserve_item(context->shader_params, ARRSIZE_RESERVE, ARRSIZE_SHADER_PARAM, sizeof(graphics_shader_param));
+        param = (graphics_shader_param*)util_reserve_item_exp(context->shader_params, ARRSIZE_RESERVE, ARRSIZE_SHADER_PARAM, sizeof(graphics_shader_param));
         strcpy(param->name, name);
     }
 
@@ -215,7 +215,7 @@ void graphics_shader_param_delete(graphics_context *context, const char *name)
 
 graphics_texture *graphics_texture_create(graphics_context *context, const void *data, int width, int height)
 {
-    graphics_texture *texture = (graphics_texture*)util_reserve_item(context->textures, ARRSIZE_RESERVE, ARRSIZE_TEXTURE, sizeof(graphics_texture));
+    graphics_texture *texture = (graphics_texture*)util_reserve_item_exp(context->textures, ARRSIZE_RESERVE, ARRSIZE_TEXTURE, sizeof(graphics_texture));
     texture->data = data;
     texture->width = width;
     texture->height = height;
@@ -259,7 +259,7 @@ void graphics_texture_destroy(graphics_texture *texture)
 
 graphics_vertex_array *graphics_vertex_array_create(graphics_context *context, float *vertex_buffer, int vertex_buffer_size, int *element_buffer, int element_buffer_size)
 {
-    graphics_vertex_array *object = (graphics_vertex_array*)util_reserve_item(context->vertex_arrays, ARRSIZE_RESERVE, ARRSIZE_VA, sizeof(graphics_vertex_array));
+    graphics_vertex_array *object = (graphics_vertex_array*)util_reserve_item_exp(context->vertex_arrays, ARRSIZE_RESERVE, ARRSIZE_VA, sizeof(graphics_vertex_array));
 
     object->vertex_buffer = malloc(vertex_buffer_size * sizeof(float));
     memcpy(object->vertex_buffer, vertex_buffer, vertex_buffer_size * sizeof(float));
@@ -342,13 +342,8 @@ void graphics_vertex_array_set_attribute(graphics_vertex_array *vertex_array, in
     }
 
     if(!attribute) {
-        for(int i = 0; i < ARRSIZE_VA_ATTRIBUTE; i++) {
-            if(!vertex_array->attributes[i].is_valid) {
-                attribute = &(vertex_array->attributes[i]);
-                attribute->is_valid = 1;
-                break;
-            }
-        }
+        attribute = (graphics_vertex_array_attribute*)util_reserve_item_arr(vertex_array->attributes, ARRSIZE_VA_ATTRIBUTE,
+                                                                            sizeof(graphics_vertex_array_attribute));
         attribute->id = id;
     }
 
@@ -380,18 +375,49 @@ void graphics_vertex_array_destroy(graphics_vertex_array *vertex_array)
 
 graphics_object *graphics_object_create(graphics_context *context)
 {
-    graphics_object *object = (graphics_object*)util_reserve_item(context->objects, ARRSIZE_RESERVE, ARRSIZE_OBJECT, sizeof(graphics_object));
+    graphics_object *object = (graphics_object*)util_reserve_item_exp(context->objects, ARRSIZE_RESERVE, ARRSIZE_OBJECT, sizeof(graphics_object));
     return object;
 }
 
-void graphics_object_shader_param_get(graphics_object *object, const char *name, float *value, int *size)
+int graphics_object_shader_param_get(graphics_object *object, const char *name, float *value, int *size)
 {
-    // TODO
+    graphics_shader_param *param = 0;
+    for(int i = 0;  i < ARRSIZE_SHADER_PARAM; i++) {
+        graphics_shader_param *p = &(object->shader_params[i]);
+        if(p->is_valid && strcmp(p->name, name) == 0) {
+            param = p;
+            break;
+        }
+    }
+
+    if(param) {
+        memcpy(value, param->value, param->size * sizeof(float));
+        *size = param->size;
+        return 1;
+    }
+    else {
+        return 0;
+    }
 }
 
 void graphics_object_shader_param_set(graphics_object *object, const char *name, float *value, int size)
 {
-    // TODO
+    graphics_shader_param *param = 0;
+    for(int i = 0;  i < ARRSIZE_SHADER_PARAM; i++) {
+        graphics_shader_param *p = &(object->shader_params[i]);
+        if(p->is_valid && strcmp(p->name, name) == 0) {
+            param = p;
+            break;
+        }
+    }
+
+    if(!param) {
+        param = (graphics_shader_param*)util_reserve_item_arr(object->shader_params, ARRSIZE_SHADER_PARAM, sizeof(graphics_shader_param));
+        strcpy(param->name, name);
+    }
+
+    memcpy(param->value, value, size * sizeof(float));
+    param->size = size;
 }
 
 void graphics_object_destroy(graphics_object *object)

@@ -10,6 +10,8 @@
 #define ARRSIZE_SHADER 100
 #define ARRSIZE_SHADER_PROGRAM 100
 #define ARRSIZE_SHADER_PARAM 100
+#define ARRSIZE_SHADER_PARAM_NAME 32
+#define ARRSIZE_SHADER_PARAM_VALUE 32
 #define ARRSIZE_TEXTURE 100
 #define ARRSIZE_VA 100
 #define ARRSIZE_VA_ATTRIBUTE 20
@@ -44,8 +46,8 @@ typedef struct graphics_shader_program {
 typedef struct graphics_shader_param {
         char is_valid;
 
-        char name[32];
-        float value[32];
+        char name[ARRSIZE_SHADER_PARAM_NAME];
+        float value[ARRSIZE_SHADER_PARAM_VALUE];
         int size;
 } graphics_shader_param;
 
@@ -123,7 +125,7 @@ void graphics_vertex_array_set_attribute(graphics_vertex_array *vertex_array, in
 void graphics_vertex_array_destroy(graphics_vertex_array *vertex_array);
 
 graphics_object *graphics_object_create(graphics_context *context);
-void graphics_object_shader_param_get(graphics_object *object, const char *name, float *value, int *size);
+int graphics_object_shader_param_get(graphics_object *object, const char *name, float *value, int *size);
 void graphics_object_shader_param_set(graphics_object *object, const char *name, float *value, int size);
 void graphics_object_destroy(graphics_object *object);
 

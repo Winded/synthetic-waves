@@ -119,11 +119,27 @@ int main(int argc, char *argv[])
 
     float clearColor[] = {0.5f, 0.5f, 0.5f, 1};
 
+    float orthoScale = 5.f;
+    float aspectRatio = (640.f / 480.f);
+    float orthoWidth = orthoScale * aspectRatio;
+    float orthoHeight = orthoScale;
+    mat4x4 projMat;
+    mat4x4_identity(projMat);
+    //mat4x4_ortho(projMat, -orthoWidth / 2.f, orthoWidth / 2.f, -orthoHeight / 2.f, orthoHeight / 2.f, 0, 100);
+    mat4x4_perspective(projMat, 90.f * DEG2RAD, aspectRatio, 0, 100);
     mat4x4 wToVPMat;
     mat4x4_identity(wToVPMat);
+    mat4x4_translate(wToVPMat, 0, 1.f, -3.f);
+    mat4x4_rotate_X(wToVPMat, wToVPMat, 45.f * DEG2RAD);
+    mat4x4_mul(wToVPMat, projMat, wToVPMat);
     graphics_shader_param_set(g, "WorldToViewportMatrix", wToVPMat, 4 * 4);
+
     mat4x4 lToWMat;
     mat4x4_identity(lToWMat);
+    mat4x4 localMat;
+    mat4x4_identity(localMat);
+    mat4x4_translate(localMat, 1, 0, 0);
+
     float baseColor[] = {1, 1, 1, 1};
     graphics_shader_param_set(g, "BaseColor", baseColor, 4);
 
@@ -139,7 +155,10 @@ int main(int argc, char *argv[])
 
         float delta = window_get_delta_time(w);
         mat4x4_rotate_Z(lToWMat, lToWMat, 45.f * DEG2RAD * delta);
-        graphics_shader_param_set(g, "LocalToWorldMatrix", lToWMat, 4 * 4);
+        mat4x4 posMat;
+        mat4x4_identity(posMat);
+        mat4x4_mul(posMat, lToWMat, localMat);
+        graphics_shader_param_set(g, "LocalToWorldMatrix", posMat, 4 * 4);
 
         graphics_clear(g, clearColor);
 
