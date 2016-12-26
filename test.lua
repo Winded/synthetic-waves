@@ -39,36 +39,37 @@ local program = g:createShaderProgram(vertexShader, fragmentShader);
 
 local texture = g:createTexture({255, 255, 255, 255}, 1, 1);
 
-local graphicsObject = g:createObject({
-  -0.5, 0.5, 0, 0, 0,
-  0.5, 0.5, 0, 0, 1,
-  0.5, -0.5, 0, 1, 1,
-  -0.5, -0.5, 0, 1, 0
+local vertexArray = g:createVertexArray({
+    -0.5, 0.5, 0, 0, 0,
+    0.5, 0.5, 0, 0, 1,
+    0.5, -0.5, 0, 1, 1,
+    -0.5, -0.5, 0, 1, 0
 }, {
-  0, 1, 3,
-  1, 2, 3
+    0, 1, 3,
+    1, 2, 3
 });
-graphicsObject:setAttribute(0, 3);
-graphicsObject:setAttribute(1, 2);
+vertexArray:setAttribute(0, 3);
+vertexArray:setAttribute(1, 2);
 
 g:setShaderParam("WorldToViewportMatrix", mat4x4());
 g:setShaderParam("BaseColor", vec4(1, 1, 1, 1));
 
+local gObj = g:createObject();
+gObj:setShaderProgram(program);
+gObj:setTexture(texture);
+gObj:setVertexArray(vertexArray);
+
 local lToWMat = mat4x4();
+gObj:setShaderParam("LocalToWorldMatrix", lToWMat);
 
 while not w:shouldClose() do
     w:pollEvents();
 
     local delta = w:getDeltaTime();
     lToWMat:rotateZ(45 * DEG2RAD * delta);
-    g:setShaderParam("LocalToWorldMatrix", lToWMat);
+    gObj:setShaderParam("LocalToWorldMatrix", lToWMat);
 
     g:clear(0.5, 0.5, 0.5, 1);
-
-    g:useProgram(program);
-    g:useTexture(texture);
-    g:useObject(graphicsObject);
-    g:useShaderParams();
 
     g:draw();
 

@@ -8,14 +8,8 @@
 
 #include <lua.h>
 #include <lauxlib.h>
-
-int lua_math_vec3_create(lua_State *L);
-int lua_math_vec3_length(lua_State *L);
+#include <linmath.h>
 
 void lua_math_load(lua_State *L);
-
-static const luaL_reg lua_math_vec3_meta[] = {
-    {"length", lua_math_vec3_length},
-};
 
 #endif //lua_math_h
