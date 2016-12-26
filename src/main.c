@@ -109,8 +109,8 @@ int main(int argc, char *argv[])
     graphics_shader *fragmentShader = graphics_shader_create(g, test_fragment_shader, graphics_fragment_shader);
     graphics_shader_program *program = graphics_shader_program_create(g, vertexShader, fragmentShader);
 
-    void *texData = malloc(1 * 1 * sizeof(char));
-    memcpy(texData, test_texture, 1 * 1 * sizeof(char));
+    void *texData = malloc(1 * 1 * 4 * sizeof(char));
+    memcpy(texData, test_texture, 1 * 1 * 4 * sizeof(char));
     graphics_texture *texture = graphics_texture_create(g, texData, 1, 1);
 
     graphics_vertex_array *va = graphics_vertex_array_create(g, test_vbo, 5 * 4, test_ebo, 3 * 2);
@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
         mat4x4 posMat;
         mat4x4_identity(posMat);
         mat4x4_mul(posMat, lToWMat, localMat);
-        graphics_shader_param_set(g, "LocalToWorldMatrix", posMat, 4 * 4);
+        graphics_object_shader_param_set(gObj, "LocalToWorldMatrix", posMat, 4 * 4);
 
         graphics_clear(g, clearColor);
 

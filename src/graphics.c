@@ -226,6 +226,9 @@ graphics_texture *graphics_texture_create(graphics_context *context, const void 
 
     glBindTexture(GL_TEXTURE_2D, glTex);
 
+    float borderColor[] = { 1.f, 1.f, 1.f ,1.f };
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (GLint)GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (GLint)GL_NEAREST);
 

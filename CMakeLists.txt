@@ -16,8 +16,6 @@ file(GLOB_RECURSE SRC_LIST
 add_executable(${PROJECT_NAME} ${SRC_LIST})
 
 target_link_libraries(${PROJECT_NAME}
-    user32
-    gdi32
     liblua
     libglew_shared
     SDL2
@@ -31,6 +29,14 @@ include_directories(include
 )
 
 add_definitions(-DUSE_OPENGL)
+
+if (CMAKE_VERSION VERSION_LESS "3.1")
+    if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+        set (CMAKE_C_FLAGS "--std=gnu99 ${CMAKE_C_FLAGS}")
+    endif ()
+else ()
+    set (CMAKE_C_STANDARD 99)
+endif ()
 
 add_custom_command(TARGET luajogo POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
