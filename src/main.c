@@ -3,6 +3,7 @@
 #include <lualib.h>
 #include <lauxlib.h>
 #include <linmath.h>
+#include <lua_math.h>
 #include <lua_window.h>
 #include <SDL.h>
 #include <window.h>
@@ -75,6 +76,7 @@ void openlibs(lua_State *L)
     luaopen_debug(L);
     //luaopen_package(L);
 
+    lua_math_load(L);
     lua_window_load(L);
 }
 
@@ -95,11 +97,11 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    //int result = lua_pcall(L, 0, LUA_MULTRET, 0);
-    //if(result) {
-    //    fprintf(stderr, "Failed to run script: %s", lua_tostring(L, -1));
-    //    return 0;
-    //}
+    int result = lua_pcall(L, 0, LUA_MULTRET, 0);
+    if(result) {
+        fprintf(stderr, "Failed to run script: %s\n", lua_tostring(L, -1));
+        return 0;
+    }
 
     window *w = window_create("Test", 640, 480);
 
