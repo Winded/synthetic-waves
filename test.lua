@@ -31,6 +31,11 @@ print("vec2 = " .. tostring(v2));
 print("vec4 = " .. tostring(v3));
 print("vec4 w = " .. tostring(v3.w));
 
+local m = mat4x4();
+print(tostring(m));
+print("mat4x4 row 1 col 1 = " .. m:get(1, 1));
+print("mat4x4 row 1 = " .. tostring(m:row(1)));
+
 -- local w = window.create(640, 480, "My title");
 -- local g = graphics.createContext();
 

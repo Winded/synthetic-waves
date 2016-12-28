@@ -285,7 +285,7 @@ void lua_math_vec##n##_load(lua_State *L)\
     luaL_newmetatable(L, "vec"#n);\
     luaL_openlib(L, 0, lua_math_vec##n##_meta, 0);\
     lua_pushliteral(L, "__metatable");\
-    lua_pushvalue(L, -3);\
+    lua_pushvalue(L, -2);\
     lua_rawset(L, -3);\
     lua_pop(L, 1);\
 }
@@ -355,17 +355,148 @@ void lua_math_vec_ext_load(lua_State *L)
     lua_pop(L, 1);
 }
 
-//static const luaL_reg lua_math_mat4x4_meta[] = {
-//    {"row", lua_math_mat4x4_row},
-//    {"column", lua_math_4x4_column},
-//    {"invert", lua_math_mat4x4_invert},
-//    {"inverted", lua_math_mat4x4_inverted},
-//    {0, 0}
-//};
+mat4x4 *lua_math_mat4x4_to(lua_State *L, int index)
+{
+    mat4x4 *m = (mat4x4*)lua_touserdata(L, index);
+    if(m == NULL) luaL_typerror(L, index, "mat4x4");
+    return m;
+}
+
+mat4x4 *lua_math_mat4x4_check(lua_State *L, int index)
+{
+    luaL_checktype(L, index, LUA_TUSERDATA);
+    mat4x4 *m = (mat4x4*)luaL_checkudata(L, index, "mat4x4");
+    if(m == NULL) luaL_typerror(L, index, "mat4x4");
+    return m;
+}
+
+void lua_math_mat4x4_push(lua_State *L, const mat4x4 *m)
+{
+    mat4x4 *lm = (mat4x4*)lua_newuserdata(L, sizeof(mat4x4));
+    memcpy(lm, m, sizeof(mat4x4));
+    luaL_getmetatable(L, "mat4x4");
+    lua_setmetatable(L, -2);
+}
+
+int lua_math_mat4x4_create(lua_State *L)
+{
+    mat4x4 m;
+    mat4x4_identity(m);
+    lua_math_mat4x4_push(L, m);
+    return 1;
+}
+
+int lua_math_mat4x4_get(lua_State *L)
+{
+    const mat4x4 *m = lua_math_mat4x4_check(L, 1);
+    int rowIdx = luaL_checkinteger(L, 2);
+    int colIdx = luaL_checkinteger(L, 3);
+    if(rowIdx <= 0 || rowIdx > 4 || colIdx <= 0 || colIdx > 4) return 0;
+
+    float value = (*m)[rowIdx - 1][colIdx - 1];
+    lua_pushnumber(L, value);
+    return 1;
+}
+
+int lua_math_mat4x4_row(lua_State *L)
+{
+    const mat4x4 *m = lua_math_mat4x4_check(L, 1);
+    int rowIdx = luaL_checkinteger(L, 2);
+    if(rowIdx <= 0 || rowIdx > 4) return 0;
+
+    vec4 v;
+    mat4x4_row(v, m, rowIdx - 1);
+    lua_math_vec4_push(L, v);
+    return 1;
+}
+
+int lua_math_mat4x4_col(lua_State *L)
+{
+    const mat4x4 *m = lua_math_mat4x4_check(L, 1);
+    int colIdx = luaL_checkinteger(L, 2);
+    if(colIdx <= 0 || colIdx > 4) return 0;
+
+    vec4 v;
+    mat4x4_col(v, m, colIdx - 1);
+    lua_math_vec4_push(L, v);
+    return 1;
+}
+
+int lua_math_mat4x4_copy(lua_State *L)
+{
+    const mat4x4 *m = lua_math_mat4x4_check(L, 1);
+    mat4x4 t;
+    mat4x4_dup(t, m);
+    lua_math_mat4x4_push(L, t);
+    return 1;
+}
+
+int lua_math_mat4x4_invert(lua_State *L)
+{
+    mat4x4 *m = lua_math_mat4x4_check(L, 1);
+    mat4x4_invert(m, m);
+    return 0;
+}
+
+int lua_math_mat4x4_inverted(lua_State *L)
+{
+    const mat4x4 *m = lua_math_mat4x4_check(L, 1);
+    mat4x4 t;
+    mat4x4_invert(t, m);
+    lua_math_mat4x4_push(L, t);
+    return 1;
+}
+
+int lua_math_mat4x4_tostring(lua_State *L)
+{
+    const mat4x4 *m = lua_math_mat4x4_check(L, 1);
+    lua_pushfstring(L, "[%f, %f, %f, %f]\n"
+                       "[%f, %f, %f, %f]\n"
+                       "[%f, %f, %f, %f]\n"
+                       "[%f, %f, %f, %f]\n",
+                    (*m)[0][0], (*m)[0][1], (*m)[0][2], (*m)[0][3],
+                    (*m)[1][0], (*m)[1][1], (*m)[1][2], (*m)[1][3],
+                    (*m)[2][0], (*m)[2][1], (*m)[2][2], (*m)[2][3],
+                    (*m)[3][0], (*m)[3][1], (*m)[3][2], (*m)[3][3]);
+    return 1;
+}
+
+int lua_math_mat4x4_type(lua_State *L)
+{
+    const mat4x4 *m = lua_math_mat4x4_check(L, 1);
+    lua_pushstring(L, "mat4x4");
+    return 1;
+}
+
+static const luaL_reg lua_math_mat4x4_meta[] = {
+    {"get", lua_math_mat4x4_get},
+    {"row", lua_math_mat4x4_row},
+    {"col", lua_math_mat4x4_col},
+    {"copy", lua_math_mat4x4_copy},
+    {"invert", lua_math_mat4x4_invert},
+    {"inverted", lua_math_mat4x4_inverted},
+    //{"__eq", lua_math_mat4x4_equals},
+    //{"__add", lua_math_mat4x4_add},
+    //{"__sub", lua_math_mat4x4_sub},
+    //{"__mul", lua_math_mat4x4_mul},
+    {"__tostring", lua_math_mat4x4_tostring},
+    {"__type", lua_math_mat4x4_type},
+    {0, 0}
+};
 
 void lua_math_mat4x4_load(lua_State *L)
 {
-    // TODO
+    lua_pushcfunction(L, lua_math_mat4x4_create);
+    lua_setglobal(L, "mat4x4");
+    luaL_newmetatable(L, "mat4x4");
+    luaL_openlib(L, 0, lua_math_mat4x4_meta, 0);
+    lua_pushliteral(L, "__index");
+    lua_pushvalue(L, -2);
+    lua_rawset(L, -3);
+    lua_pushliteral(L, "__metatable");
+    lua_pushvalue(L, -2);
+    lua_rawset(L, -3);
+    lua_pop(L, 1);
 }
 
 void lua_math_load(lua_State *L)

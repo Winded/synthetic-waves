@@ -22,7 +22,9 @@ vec4 *lua_math_vec4_to(lua_State *L, int index);
 vec4 *lua_math_vec4_check(lua_State *L, int index);
 void lua_math_vec4_push(lua_State *L, const vec4 *v);
 
-
+mat4x4 *lua_math_mat4x4_to(lua_State *L, int index);
+mat4x4 *lua_math_mat4x4_check(lua_State *L, int index);
+void lua_math_mat4x4_push(lua_State *L, const mat4x4 *m);
 
 void lua_math_load(lua_State *L);
 
