@@ -1,17 +1,35 @@
 -- Test script
 
 local v = vec3(1, 2, 3);
-print("Vector = " .. tostring(v));
-print("Vector y = " .. v.y);
-print("Vector len = " .. v:length());
-print("Vector + (3, 3, 3) = " .. tostring(v + vec3(3, 3, 3)));
-print("Vector * 2 = " .. tostring(v * 2));
-print("Vector / 2 = " .. tostring(v / 2));
-print("-Vector = " .. tostring(-v));
 
-print("Setting vector value");
+print("vec3 = " .. tostring(v));
+print("vec3 y = " .. v.y);
+print("vec3 len = " .. v:length());
+
+print("vec3 + (3, 3, 3) = " .. tostring(v + vec3(3, 3, 3)));
+print("vec3 * 2 = " .. tostring(v * 2));
+print("vec3 / 2 = " .. tostring(v / 2));
+print("-vec3 = " .. tostring(-v));
+
+print("vec3 dot = " .. tostring(v:dotProduct(v)));
+print("vec3 cross = " .. tostring(v:crossProduct(v)));
+
+print("vec3 normalized = " .. tostring(v:normalized()));
+
+print("Setting vec3 value");
 v.x = 999.995;
-print("Vector = " .. tostring(v));
+print("vec3 = " .. tostring(v));
+print("Normalizing...");
+v:normalize();
+print("vec3 = " .. tostring(v));
+
+print("vec3 type = " .. type(v));
+
+local v2 = vec2(5, 6);
+local v3 = vec4(3, 6, 1, 5);
+print("vec2 = " .. tostring(v2));
+print("vec4 = " .. tostring(v3));
+print("vec4 w = " .. tostring(v3.w));
 
 -- local w = window.create(640, 480, "My title");
 -- local g = graphics.createContext();
