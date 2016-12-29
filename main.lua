@@ -1,79 +1,78 @@
 -- Test script
 
--- local w = window.create(640, 480, "My title");
--- local g = graphics.createContext();
+local w = window(640, 480, "My title");
+local g = graphicsContext();
+w:setGraphicsContext(g);
 
--- local vertexShader = g:createVertexShader([[
--- #version 330
+local vertexShader = g:createVertexShader([[
+#version 330
 
--- in vec3 position;
--- in vec2 uvCoordinates;
+in vec3 position;
+in vec2 uvCoordinates;
 
--- out vec2 UV;
+out vec2 UV;
 
--- uniform mat4 WorldToViewportMatrix;
--- uniform mat4 LocalToWorldMatrix;
+uniform mat4 WorldToViewportMatrix;
+uniform mat4 LocalToWorldMatrix;
 
--- void main()
--- {
---     gl_Position = WorldToViewportMatrix * LocalToWorldMatrix * vec4(position.xyz, 1.0);
---     UV = uvCoordinates;
--- }
--- ]]);
--- local fragmentShader = g:createFragmentShader([[
--- #version 330
+void main()
+{
+    gl_Position = WorldToViewportMatrix * LocalToWorldMatrix * vec4(position.xyz, 1.0);
+    UV = uvCoordinates;
+}
+]]);
+local fragmentShader = g:createFragmentShader([[
+#version 330
 
--- in vec2 UV;
+in vec2 UV;
 
--- out vec4 outColor;
+out vec4 outColor;
 
--- uniform sampler2D Texture1;
--- uniform vec4 BaseColor;
+uniform sampler2D Texture1;
+uniform vec4 BaseColor;
 
--- void main()
--- {
---     outColor = texture2D(Texture1, UV) * BaseColor;
--- }
--- ]]);
--- local program = g:createShaderProgram(vertexShader, fragmentShader);
+void main()
+{
+    outColor = texture2D(Texture1, UV) * BaseColor;
+}
+]]);
+local program = g:createShaderProgram(vertexShader, fragmentShader);
 
--- local texture = g:createTexture({255, 255, 255, 255}, 1, 1);
+local texture = g:createTexture({255, 255, 255, 255}, 1, 1);
 
--- local vertexArray = g:createVertexArray({
---     -0.5, 0.5, 0, 0, 0,
---     0.5, 0.5, 0, 0, 1,
---     0.5, -0.5, 0, 1, 1,
---     -0.5, -0.5, 0, 1, 0
--- }, {
---     0, 1, 3,
---     1, 2, 3
--- });
--- vertexArray:setAttribute(0, 3);
--- vertexArray:setAttribute(1, 2);
+local vertexArray = g:createVertexArray({
+    -0.5, 0.5, 0, 0, 0,
+    0.5, 0.5, 0, 0, 1,
+    0.5, -0.5, 0, 1, 1,
+    -0.5, -0.5, 0, 1, 0
+}, {
+    0, 1, 3,
+    1, 2, 3
+});
+vertexArray:setAttribute(0, 3);
+vertexArray:setAttribute(1, 2);
 
--- g:setShaderParam("WorldToViewportMatrix", mat4x4());
--- g:setShaderParam("BaseColor", vec4(1, 1, 1, 1));
+g:setShaderParam("WorldToViewportMatrix", mat4x4());
+g:setShaderParam("BaseColor", color("white"));
 
--- local gObj = g:createObject();
--- gObj:setShaderProgram(program);
--- gObj:setTexture(texture);
--- gObj:setVertexArray(vertexArray);
+local gObj = g:createObject();
+gObj:setShaderProgram(program);
+gObj:setTexture(texture);
+gObj:setVertexArray(vertexArray);
 
--- local lToWMat = mat4x4();
--- gObj:setShaderParam("LocalToWorldMatrix", lToWMat);
+local lToWMat = mat4x4();
+gObj:setShaderParam("LocalToWorldMatrix", lToWMat);
 
--- while not w:shouldClose() do
---     w:pollEvents();
+w:setClearColor(color(150, 150, 150, 255));
 
---     local delta = w:getDeltaTime();
---     lToWMat:rotateZ(45 * DEG2RAD * delta);
---     gObj:setShaderParam("LocalToWorldMatrix", lToWMat);
+while not w:shouldClose() do
+    w:pollEvents();
 
---     g:clear(0.5, 0.5, 0.5, 1);
+    local delta = w:deltaTime();
+    lToWMat:rotateEuler(vec3(0, 0, 45 * DEG2RAD * delta));
+    gObj:setShaderParam("LocalToWorldMatrix", lToWMat);
 
---     g:draw();
+    w:draw();
+end
 
---     w:swapBuffers();
--- end
-
--- w:destroy();
+w:destroy();

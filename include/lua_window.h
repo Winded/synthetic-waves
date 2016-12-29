@@ -12,43 +12,16 @@
 #include <lauxlib.h>
 #include "window.h"
 
-window *lua_window_towindow(lua_State *L, int index);
+window *lua_window_to(lua_State *L, int index);
 
-window *lua_window_checkwindow(lua_State *L, int index);
+window *lua_window_check(lua_State *L, int index);
 
-int lua_window_create(lua_State *L);
-
-int lua_window_getDeltaTime(lua_State *L);
-
-int lua_window_shouldClose(lua_State *L);
-
-int lua_window_swapBuffers(lua_State *L);
-
-int lua_window_pollEvents(lua_State *L);
-
-int lua_window_destroy(lua_State *L);
-
-int lua_window_tostring(lua_State *L);
+void lua_window_push(lua_State *L, const window *w);
 
 /**
  * @brief Load the window library into given state
  * @param L lua context
  */
 void lua_window_load(lua_State *L);
-
-static const luaL_reg lua_window_methods[] = {
-    {"create", lua_window_create},
-    {"getDeltaTime", lua_window_getDeltaTime},
-    {"shouldClose", lua_window_shouldClose},
-    {"swapBuffers", lua_window_swapBuffers},
-    {"pollEvents", lua_window_pollEvents},
-    {"destroy", lua_window_destroy},
-    {0, 0}
-};
-
-static const luaL_reg lua_window_meta[] = {
-    {"__tostring", lua_window_tostring},
-    {0, 0}
-};
 
 #endif // lua_window_h

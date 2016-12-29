@@ -3,6 +3,8 @@
 #include <lualib.h>
 #include <lauxlib.h>
 #include <linmath.h>
+#include <lua_type.h>
+#include <lua_color.h>
 #include <lua_math.h>
 #include <lua_window.h>
 #include <SDL.h>
@@ -76,6 +78,8 @@ void openlibs(lua_State *L)
     luaopen_debug(L);
     //luaopen_package(L);
 
+    lua_type_load(L);
+    lua_color_load(L);
     lua_math_load(L);
     lua_window_load(L);
 }
@@ -106,8 +110,8 @@ int main(int argc, char *argv[])
     }
 
     window *w = window_create("Test", 640, 480);
-
     graphics_context *g = graphics_context_create();
+    window_set_graphics_context(w, g);
 
     graphics_shader *vertexShader = graphics_shader_create(g, test_vertex_shader, graphics_vertex_shader);
     graphics_shader *fragmentShader = graphics_shader_create(g, test_fragment_shader, graphics_fragment_shader);
@@ -164,11 +168,7 @@ int main(int argc, char *argv[])
         mat4x4_mul(posMat, lToWMat, localMat);
         graphics_object_shader_param_set(gObj, "LocalToWorldMatrix", posMat, 4 * 4);
 
-        graphics_clear(g, clearColor);
-
-        graphics_draw(g);
-
-        window_swap_buffers(w);
+        window_draw(w);
     }
 
     graphics_context_destroy(&g);

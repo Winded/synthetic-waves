@@ -1,5 +1,6 @@
 #include "window.h"
 #include <stdio.h>
+#include <memory.h>
 #include <GL/glew.h>
 #include <time.h>
 
@@ -46,13 +47,33 @@ window *window_create(const char *title, int width, int height)
     return w_handle;
 }
 
+void window_set_graphics_context(window *w_handle, const graphics_context *context)
+{
+    w_handle->g_context = context;
+}
+
+void window_get_clear_color(const window *w_handle, float *color)
+{
+    memcpy(color, w_handle->clear_color, sizeof(float) * 4);
+}
+
+void window_set_clear_color(window *w_handle, const float *color)
+{
+    memcpy(w_handle->clear_color, color, sizeof(float) * 4);
+}
+
 float window_get_delta_time(window *w_handle)
 {
     return (float)((w_handle->time - w_handle->last_time) * 1000 / (double)SDL_GetPerformanceFrequency() * 0.001f);
 }
 
-void window_swap_buffers(window *w_handle)
+void window_draw(window *w_handle)
 {
+    if(w_handle->g_context) {
+        graphics_clear(w_handle->g_context, w_handle->clear_color);
+        graphics_draw(w_handle->g_context);
+    }
+
 #ifdef USE_OPENGL
     SDL_GL_SwapWindow(w_handle->sdl_window);
 #endif
@@ -80,7 +101,7 @@ void window_poll_events(window *w_handle)
     SDL_Event event;
     while(SDL_PollEvent(&event)) {
         if(event.type == SDL_QUIT) {
-            w_handle->should_close = true;
+            w_handle->should_close = 1;
         }
         else if(event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_RESIZED) {
             int width, height;
@@ -92,7 +113,7 @@ void window_poll_events(window *w_handle)
     }
 }
 
-bool window_should_close(window *w_handle)
+int window_should_close(window *w_handle)
 {
     return w_handle->should_close;
 }
