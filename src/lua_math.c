@@ -398,6 +398,18 @@ int lua_math_mat4x4_get(lua_State *L)
     return 1;
 }
 
+int lua_math_mat4x4_set(lua_State *L)
+{
+    mat4x4 *m = lua_math_mat4x4_check(L, 1);
+    int rowIdx = luaL_checkinteger(L, 2);
+    int colIdx = luaL_checkinteger(L, 3);
+    float value = luaL_checknumber(L, 4);
+    if(rowIdx <= 0 || rowIdx > 4 || colIdx <= 0 || colIdx > 4) return 0;
+
+    (*m)[rowIdx - 1][colIdx - 1] = value;
+    return 0;
+}
+
 int lua_math_mat4x4_row(lua_State *L)
 {
     const mat4x4 *m = lua_math_mat4x4_check(L, 1);
@@ -447,6 +459,158 @@ int lua_math_mat4x4_inverted(lua_State *L)
     return 1;
 }
 
+int lua_math_mat4x4_translate(lua_State *L)
+{
+    mat4x4 *m = lua_math_mat4x4_check(L, 1);
+    const vec3 *v = lua_math_vec3_check(L, 2);
+
+    mat4x4_translate(m, (*v)[0], (*v)[1], (*v)[2]);
+    return 0;
+}
+
+int lua_math_mat4x4_translate_in_place(lua_State *L)
+{
+    mat4x4 *m = lua_math_mat4x4_check(L, 1);
+    const vec3 *v = lua_math_vec3_check(L, 2);
+
+    mat4x4_translate_in_place(m, (*v)[0], (*v)[1], (*v)[2]);
+    return 0;
+}
+
+int lua_math_mat4x4_rotate(lua_State *L)
+{
+    mat4x4 *m = lua_math_mat4x4_check(L, 1);
+    const vec3 *v = lua_math_vec3_check(L, 2);
+    float angle = luaL_checknumber(L, 3);
+    angle *= DEG2RAD;
+
+    mat4x4_rotate(m, m, (*v)[0], (*v)[1], (*v)[2], angle);
+    return 0;
+}
+
+int lua_math_mat4x4_rotate_euler(lua_State *L)
+{
+    mat4x4 *m = lua_math_mat4x4_check(L, 1);
+    const vec3 *v = lua_math_vec3_check(L, 2);
+
+    mat4x4_rotate_X(m, m, (*v)[0] * DEG2RAD);
+    mat4x4_rotate_Y(m, m, (*v)[1] * DEG2RAD);
+    mat4x4_rotate_Z(m, m, (*v)[2] * DEG2RAD);
+    return 0;
+}
+
+int lua_math_mat4x4_scale(lua_State *L)
+{
+    mat4x4 *m = lua_math_mat4x4_check(L, 1);
+
+    if(lua_isnumber(L, 2)) {
+        float value = luaL_checknumber(L, 2);
+        mat4x4_scale(m, m, value);
+        return 0;
+    }
+
+    const vec3 *v = lua_math_mat4x4_check(L, 2);
+    mat4x4_scale_aniso(m, m, (*v)[0], (*v)[1], (*v)[2]);
+    return 0;
+}
+
+int lua_math_mat4x4_ortho(lua_State *L)
+{
+    mat4x4 *m = lua_math_mat4x4_check(L, 1);
+    float l = luaL_checknumber(L, 2);
+    float r = luaL_checknumber(L, 3);
+    float b = luaL_checknumber(L, 4);
+    float t = luaL_checknumber(L, 5);
+    float n = luaL_checknumber(L, 6);
+    float f = luaL_checknumber(L, 7);
+
+    mat4x4_ortho(m, l, r, b, t, n, f);
+    return 0;
+}
+
+int lua_math_mat4x4_perspective(lua_State *L)
+{
+    mat4x4 *m = lua_math_mat4x4_check(L, 1);
+    float y_fov = luaL_checknumber(L, 2);
+    float aspect = luaL_checknumber(L, 3);
+    float n = luaL_checknumber(L, 4);
+    float f = luaL_checknumber(L, 5);
+
+    mat4x4_perspective(m, y_fov * DEG2RAD, aspect, n, f);
+    return 0;
+}
+
+int lua_math_mat4x4_equals(lua_State *L)
+{
+    const mat4x4 *m1 = lua_math_mat4x4_check(L, 1);
+    const mat4x4 *m2 = lua_math_mat4x4_check(L, 2);
+
+    int equal = 1;
+    for(int x = 0; x < 4; x++) {
+        for(int y = 0; y < 4; y++) {
+            if((*m1)[x][y] != (*m2)[x][y]) {
+                equal = 0;
+            }
+        }
+    }
+
+    lua_pushboolean(L, equal);
+    return 1;
+}
+
+int lua_math_mat4x4_add(lua_State *L)
+{
+    const mat4x4 *m1 = lua_math_mat4x4_check(L, 1);
+    const mat4x4 *m2 = lua_math_mat4x4_check(L, 2);
+
+    mat4x4 m;
+    mat4x4_add(m, m1, m2);
+    lua_math_mat4x4_push(L, m);
+    return 1;
+}
+
+int lua_math_mat4x4_sub(lua_State *L)
+{
+    const mat4x4 *m1 = lua_math_mat4x4_check(L, 1);
+    const mat4x4 *m2 = lua_math_mat4x4_check(L, 2);
+
+    mat4x4 m;
+    mat4x4_sub(m, m1, m2);
+    lua_math_mat4x4_push(L, m);
+    return 1;
+}
+
+int lua_math_mat4x4_mul(lua_State *L)
+{
+    const mat4x4 *m1 = lua_math_mat4x4_check(L, 1);
+    if(!lua_isuserdata(L, 2)) {
+        luaL_error(L, "Argument #2 is not vec3 or mat4x4\n");
+        return 0;
+    }
+
+    lua_getmetatable(L, 2);
+    luaL_getmetatable(L, "vec4");
+    luaL_getmetatable(L, "mat4x4");
+    if(lua_equal(L, -2, -3)) {
+        const vec4 *v1 = lua_math_vec4_check(L, 2);
+        vec4 v;
+        mat4x4_mul_vec4(v, m1, v1);
+        lua_math_vec4_push(L, v);
+        return 1;
+    }
+    else if(lua_equal(L, -1, -3)) {
+        const mat4x4 *m2 = lua_math_mat4x4_check(L, 2);
+        mat4x4 m;
+        mat4x4_mul(m, m1, m2);
+        lua_math_mat4x4_push(L, m);
+        return 1;
+    }
+    else {
+        luaL_error(L, "Argument #2 is not vec3 or mat4x4\n");
+        return 0;
+    }
+}
+
 int lua_math_mat4x4_tostring(lua_State *L)
 {
     const mat4x4 *m = lua_math_mat4x4_check(L, 1);
@@ -470,15 +634,23 @@ int lua_math_mat4x4_type(lua_State *L)
 
 static const luaL_reg lua_math_mat4x4_meta[] = {
     {"get", lua_math_mat4x4_get},
+    {"set", lua_math_mat4x4_set},
     {"row", lua_math_mat4x4_row},
     {"col", lua_math_mat4x4_col},
     {"copy", lua_math_mat4x4_copy},
     {"invert", lua_math_mat4x4_invert},
     {"inverted", lua_math_mat4x4_inverted},
-    //{"__eq", lua_math_mat4x4_equals},
-    //{"__add", lua_math_mat4x4_add},
-    //{"__sub", lua_math_mat4x4_sub},
-    //{"__mul", lua_math_mat4x4_mul},
+    {"translate", lua_math_mat4x4_translate},
+    {"translateInPlace", lua_math_mat4x4_translate_in_place},
+    {"rotate", lua_math_mat4x4_rotate},
+    {"rotateEuler", lua_math_mat4x4_rotate_euler},
+    {"scale", lua_math_mat4x4_scale},
+    {"ortho", lua_math_mat4x4_ortho},
+    {"perspective", lua_math_mat4x4_perspective},
+    {"__eq", lua_math_mat4x4_equals},
+    {"__add", lua_math_mat4x4_add},
+    {"__sub", lua_math_mat4x4_sub},
+    {"__mul", lua_math_mat4x4_mul},
     {"__tostring", lua_math_mat4x4_tostring},
     {"__type", lua_math_mat4x4_type},
     {0, 0}
@@ -508,4 +680,19 @@ void lua_math_load(lua_State *L)
     lua_math_vec_ext_load(L);
 
     lua_math_mat4x4_load(L);
+}
+
+void lua_math_test(lua_State *L)
+{
+    int status = luaL_loadfile(L, "../tests/math.lua");
+    if(status) {
+        fprintf(stderr, "Couldn't load file: %s", lua_tostring(L, -1));
+        return 0;
+    }
+
+    int result = lua_pcall(L, 0, LUA_MULTRET, 0);
+    if(result) {
+        fprintf(stderr, "Failed to run script: %s\n", lua_tostring(L, -1));
+        return 0;
+    }
 }

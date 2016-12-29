@@ -27,5 +27,6 @@ mat4x4 *lua_math_mat4x4_check(lua_State *L, int index);
 void lua_math_mat4x4_push(lua_State *L, const mat4x4 *m);
 
 void lua_math_load(lua_State *L);
+void lua_math_test(lua_State *L);
 
 #endif //lua_math_h

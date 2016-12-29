@@ -86,7 +86,9 @@ int main(int argc, char *argv[])
 
     openlibs(L);
 
-    int status = luaL_loadfile(L, "../test.lua");
+    lua_math_test(L);
+
+    int status = luaL_loadfile(L, "../main.lua");
     if(status) {
         fprintf(stderr, "Couldn't load file: %s", lua_tostring(L, -1));
         return 0;
