@@ -30,7 +30,19 @@ int lua_color_create(lua_State *L)
     lua_color c;
     memset(c, 0, sizeof(lua_color));
 
-    if(lua_isstring(L, 1)) {
+    if(lua_isnumber(L, 1)) {
+        c[0] = luaL_checkinteger(L, 1);
+        if(lua_isnumber(L, 2)) {
+            c[1] = luaL_checkinteger(L, 2);
+        }
+        if(lua_isnumber(L, 3)) {
+            c[2] = luaL_checkinteger(L, 3);
+        }
+        if(lua_isnumber(L, 4)) {
+            c[3] = luaL_checkinteger(L, 4);
+        }
+    }
+    else if(lua_isstring(L, 1)) {
         const char *sColor = luaL_checkstring(L, 1);
         if(strcmp(sColor, "white") == 0) {
             c[0] = 255;
@@ -58,19 +70,6 @@ int lua_color_create(lua_State *L)
         }
         lua_color_push(L, c);
         return 1;
-    }
-
-    if(lua_isnumber(L, 1)) {
-        c[0] = luaL_checkinteger(L, 1);
-    }
-    if(lua_isnumber(L, 2)) {
-        c[1] = luaL_checkinteger(L, 2);
-    }
-    if(lua_isnumber(L, 3)) {
-        c[2] = luaL_checkinteger(L, 3);
-    }
-    if(lua_isnumber(L, 4)) {
-        c[3] = luaL_checkinteger(L, 4);
     }
 
     lua_color_push(L, c);
@@ -132,7 +131,7 @@ int lua_color_newindex(lua_State *L)
 int lua_color_tostring(lua_State *L)
 {
     const lua_color *c = lua_color_check(L, 1);
-    lua_pushstring(L, "color");
+    lua_pushfstring(L, "color(%d, %d, %d, %d)", (*c)[0], (*c)[1], (*c)[2], (*c)[3]);
     return 1;
 }
 
@@ -157,11 +156,23 @@ void lua_color_load(lua_State *L)
     lua_setglobal(L, "color");
     luaL_newmetatable(L, "color");
     luaL_openlib(L, 0, lua_color_meta, 0);
-    lua_pushliteral(L, "__index");
-    lua_pushvalue(L, -2);
-    lua_rawset(L, -3);
     lua_pushliteral(L, "__metatable");
     lua_pushvalue(L, -2);
     lua_rawset(L, -3);
     lua_pop(L, 1);
+}
+
+void lua_color_test(lua_State *L)
+{
+    int status = luaL_loadfile(L, "../tests/color.lua");
+    if(status) {
+        fprintf(stderr, "Couldn't load file: %s", lua_tostring(L, -1));
+        return 0;
+    }
+
+    int result = lua_pcall(L, 0, LUA_MULTRET, 0);
+    if(result) {
+        fprintf(stderr, "Failed to run script: %s\n", lua_tostring(L, -1));
+        return 0;
+    }
 }

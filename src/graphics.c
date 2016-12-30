@@ -104,7 +104,7 @@ void graphics_shader_destroy(graphics_shader *shader)
     memset(shader, 0, sizeof(graphics_shader));
 }
 
-graphics_shader_program *graphics_shader_program_create(graphics_context *context, graphics_shader *vertex_shader, graphics_shader *fragment_shader)
+graphics_shader_program *graphics_shader_program_create(graphics_context *context, const graphics_shader *vertex_shader, const graphics_shader *fragment_shader)
 {
     graphics_shader_program *program = (graphics_shader_program*)util_reserve_item_exp(context->shader_programs, ARRSIZE_RESERVE, ARRSIZE_SHADER_PROGRAM,
                                                                                        sizeof(graphics_shader_program));
@@ -421,6 +421,25 @@ void graphics_object_shader_param_set(graphics_object *object, const char *name,
 
     memcpy(param->value, value, size * sizeof(float));
     param->size = size;
+}
+
+void graphics_object_shader_param_delete(graphics_object *object, const char *name)
+{
+    graphics_shader_param *param = 0;
+    for(int i = 0;  i < ARRSIZE_SHADER_PARAM; i++) {
+        graphics_shader_param *p = &(object->shader_params[i]);
+        if(p->is_valid && strcmp(p->name, name) == 0) {
+            param = p;
+            break;
+        }
+    }
+
+    if(param) {
+        if(param->value) {
+            free(param->value);
+        }
+        memset(param, 0, sizeof(graphics_shader_param));
+    }
 }
 
 void graphics_object_destroy(graphics_object *object)

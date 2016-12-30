@@ -680,6 +680,12 @@ void lua_math_load(lua_State *L)
     lua_math_vec_ext_load(L);
 
     lua_math_mat4x4_load(L);
+
+    // math globals
+    lua_pushnumber(L, DEG2RAD);
+    lua_setglobal(L, "DEG2RAD");
+    lua_pushnumber(L, RAD2DEG);
+    lua_setglobal(L, "RAD2DEG");
 }
 
 void lua_math_test(lua_State *L)

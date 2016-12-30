@@ -16,5 +16,6 @@ lua_color *lua_color_check(lua_State *L, int index);
 void lua_color_push(lua_State *L, const lua_color *color);
 
 void lua_color_load(lua_State *L);
+void lua_color_test(lua_State *L);
 
 #endif // lua_color_h

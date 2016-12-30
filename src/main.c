@@ -7,6 +7,7 @@
 #include <lua_color.h>
 #include <lua_math.h>
 #include <lua_window.h>
+#include <lua_graphics.h>
 #include <SDL.h>
 #include <window.h>
 #include <graphics.h>
@@ -82,6 +83,7 @@ void openlibs(lua_State *L)
     lua_color_load(L);
     lua_math_load(L);
     lua_window_load(L);
+    lua_graphics_load(L);
 }
 
 int main(int argc, char *argv[])
@@ -90,6 +92,7 @@ int main(int argc, char *argv[])
 
     openlibs(L);
 
+    lua_color_test(L);
     lua_math_test(L);
 
     int status = luaL_loadfile(L, "../main.lua");
@@ -108,71 +111,6 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Failed to run script: %s\n", lua_tostring(L, -1));
         return 0;
     }
-
-    window *w = window_create("Test", 640, 480);
-    graphics_context *g = graphics_context_create();
-    window_set_graphics_context(w, g);
-
-    graphics_shader *vertexShader = graphics_shader_create(g, test_vertex_shader, graphics_vertex_shader);
-    graphics_shader *fragmentShader = graphics_shader_create(g, test_fragment_shader, graphics_fragment_shader);
-    graphics_shader_program *program = graphics_shader_program_create(g, vertexShader, fragmentShader);
-
-    void *texData = malloc(1 * 1 * 4 * sizeof(char));
-    memcpy(texData, test_texture, 1 * 1 * 4 * sizeof(char));
-    graphics_texture *texture = graphics_texture_create(g, texData, 1, 1);
-
-    graphics_vertex_array *va = graphics_vertex_array_create(g, test_vbo, 5 * 4, test_ebo, 3 * 2);
-    graphics_vertex_array_set_attribute(va, 0, 3);
-    graphics_vertex_array_set_attribute(va, 1, 2);
-
-    float clearColor[] = {0.5f, 0.5f, 0.5f, 1};
-
-    float orthoScale = 5.f;
-    float aspectRatio = (640.f / 480.f);
-    float orthoWidth = orthoScale * aspectRatio;
-    float orthoHeight = orthoScale;
-    mat4x4 projMat;
-    mat4x4_identity(projMat);
-    //mat4x4_ortho(projMat, -orthoWidth / 2.f, orthoWidth / 2.f, -orthoHeight / 2.f, orthoHeight / 2.f, 0, 100);
-    mat4x4_perspective(projMat, 90.f * DEG2RAD, aspectRatio, 0, 100);
-    mat4x4 wToVPMat;
-    mat4x4_identity(wToVPMat);
-    mat4x4_translate(wToVPMat, 0, 1.f, -3.f);
-    mat4x4_rotate_X(wToVPMat, wToVPMat, 45.f * DEG2RAD);
-    mat4x4_mul(wToVPMat, projMat, wToVPMat);
-    graphics_shader_param_set(g, "WorldToViewportMatrix", wToVPMat, 4 * 4);
-
-    mat4x4 lToWMat;
-    mat4x4_identity(lToWMat);
-    mat4x4 localMat;
-    mat4x4_identity(localMat);
-    mat4x4_translate(localMat, 1, 0, 0);
-
-    float baseColor[] = {1, 1, 1, 1};
-    graphics_shader_param_set(g, "BaseColor", baseColor, 4);
-
-    graphics_object *gObj = graphics_object_create(g);
-    gObj->shader_program = program;
-    gObj->texture = texture;
-    gObj->vertex_array = va;
-
-    graphics_refresh_draw_order(g);
-
-    while(!window_should_close(w)) {
-        window_poll_events(w);
-
-        float delta = window_get_delta_time(w);
-        mat4x4_rotate_Z(lToWMat, lToWMat, 45.f * DEG2RAD * delta);
-        mat4x4 posMat;
-        mat4x4_identity(posMat);
-        mat4x4_mul(posMat, lToWMat, localMat);
-        graphics_object_shader_param_set(gObj, "LocalToWorldMatrix", posMat, 4 * 4);
-
-        window_draw(w);
-    }
-
-    graphics_context_destroy(&g);
-    window_destroy(&w);
 
     SDL_Quit();
 

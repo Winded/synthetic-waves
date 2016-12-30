@@ -109,7 +109,7 @@ void graphics_context_destroy(graphics_context **context);
 graphics_shader *graphics_shader_create(graphics_context *context, const char *code, graphics_shader_type type);
 void graphics_shader_destroy(graphics_shader *shader);
 
-graphics_shader_program *graphics_shader_program_create(graphics_context *context, graphics_shader *vertex_shader, graphics_shader *fragment_shader);
+graphics_shader_program *graphics_shader_program_create(graphics_context *context, const graphics_shader *vertex_shader, const graphics_shader *fragment_shader);
 void graphics_shader_program_destroy(graphics_shader_program *program);
 
 int graphics_shader_param_get(graphics_context *context, const char *name, float *value, int *size);
@@ -127,6 +127,7 @@ void graphics_vertex_array_destroy(graphics_vertex_array *vertex_array);
 graphics_object *graphics_object_create(graphics_context *context);
 int graphics_object_shader_param_get(graphics_object *object, const char *name, float *value, int *size);
 void graphics_object_shader_param_set(graphics_object *object, const char *name, float *value, int size);
+void graphics_object_shader_param_delete(graphics_object *object, const char *name);
 void graphics_object_destroy(graphics_object *object);
 
 void graphics_refresh_draw_order(graphics_context *context);

@@ -1,4 +1,5 @@
 #include <lua_window.h>
+#include <lua_graphics.h>
 #include <lua_color.h>
 #include <GL/glew.h>
 
@@ -35,6 +36,14 @@ int lua_window_create(lua_State *L)
     window *w = window_create(title, width, height);
     lua_window_push(L, w);
     return 1;
+}
+
+int lua_window_set_graphics_context(lua_State *L)
+{
+    window *w = lua_window_check(L, 1);
+    const graphics_context *ctx = lua_graphics_check(L, 2);
+    window_set_graphics_context(w, ctx);
+    return 0;
 }
 
 int lua_window_delta_time(lua_State *L)
@@ -110,6 +119,7 @@ int lua_window_tostring(lua_State *L)
 }
 
 static const luaL_reg lua_window_meta[] = {
+    {"setGraphicsContext", lua_window_set_graphics_context},
     {"deltaTime", lua_window_delta_time},
     {"clearColor", lua_window_get_clear_color},
     {"setClearColor", lua_window_set_clear_color},
