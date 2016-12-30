@@ -3,6 +3,7 @@
 #include <memory.h>
 #include <GL/glew.h>
 #include <time.h>
+#include <assert.h>
 
 window *window_create(const char *title, int width, int height)
 {
@@ -79,20 +80,6 @@ void window_draw(window *w_handle)
 #endif
 }
 
-void window_destroy(window **w_handle)
-{
-    window *w = *w_handle;
-
-#ifdef USE_OPENGL
-    SDL_GL_DeleteContext(w->sdl_render_context);
-#endif
-    SDL_DestroyWindow(w->sdl_window);
-
-    free(w);
-
-    *w_handle = 0;
-}
-
 void window_poll_events(window *w_handle)
 {
     w_handle->last_time = w_handle->time;
@@ -110,10 +97,52 @@ void window_poll_events(window *w_handle)
             glViewport(0, 0, width, height);
 #endif
         }
+
+        // Run callbacks
+        for(int i = 0; i < WINDOW_MAX_CALLBACKS; i++) {
+            if(w_handle->event_callbacks[i].callback) {
+                w_handle->event_callbacks[i].callback(w_handle, &event, w_handle->event_callbacks[i].data);
+            }
+        }
     }
 }
 
 int window_should_close(window *w_handle)
 {
     return w_handle->should_close;
+}
+
+void window_add_event_callback(window *w_handle, window_event_cb_func cb, void *data)
+{
+    for(int i = 0; i < WINDOW_MAX_CALLBACKS; i++) {
+        if(w_handle->event_callbacks[i].callback) continue;
+        w_handle->event_callbacks[i].callback = cb;
+        w_handle->event_callbacks[i].data = data;
+        return;
+    }
+    assert("Callback array is full" && 0);
+}
+
+void window_remove_event_callback(window *w_handle, window_event_cb_func cb)
+{
+    for(int i = 0; i < WINDOW_MAX_CALLBACKS; i++) {
+        if(w_handle->event_callbacks[i].callback == cb) {
+            memset(&(w_handle->event_callbacks[i]), 0, sizeof(window_event_callback));
+            return;
+        }
+    }
+}
+
+void window_destroy(window **w_handle)
+{
+    window *w = *w_handle;
+
+#ifdef USE_OPENGL
+    SDL_GL_DeleteContext(w->sdl_render_context);
+#endif
+    SDL_DestroyWindow(w->sdl_window);
+
+    free(w);
+
+    *w_handle = 0;
 }

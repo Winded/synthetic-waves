@@ -27,6 +27,18 @@ void lua_window_push(lua_State *L, const window *w)
     lua_setmetatable(L, -2);
 }
 
+void lua_window_handle_event(window *w, SDL_Event *event, void *data)
+{
+    lua_State *L = (lua_State*)data;
+
+    // TODO (current is example)
+    if(event->type == SDL_WINDOWEVENT && event->window.event == SDL_WINDOWEVENT_RESIZED) {
+        int width, height;
+        SDL_GetWindowSize(SDL_GetWindowFromID(event->window.windowID), &width, &height);
+        // TODO
+    }
+}
+
 int lua_window_create(lua_State *L)
 {
     int width = luaL_checkinteger(L, 1);
@@ -34,6 +46,7 @@ int lua_window_create(lua_State *L)
     const char *title = luaL_checkstring(L, 3);
 
     window *w = window_create(title, width, height);
+    window_add_event_callback(w, lua_window_handle_event, L);
     lua_window_push(L, w);
     return 1;
 }
@@ -106,6 +119,7 @@ int lua_window_draw(lua_State *L)
 int lua_window_destroy(lua_State *L)
 {
     window *w_handle = lua_window_check(L, 1);
+    window_remove_event_callback(w_handle, lua_window_handle_event);
     window_destroy(&w_handle);
     lua_pushboolean(L, 1);
     return 1;

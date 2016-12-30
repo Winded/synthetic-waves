@@ -12,62 +12,6 @@
 #include <window.h>
 #include <graphics.h>
 
-static const char test_vertex_shader[] = ""
-        "#version 330\n"
-
-        "in vec3 position;"
-        "in vec2 uvCoordinates;"
-
-        "out vec2 UV;"
-
-        "uniform mat4 WorldToViewportMatrix;"
-        "uniform mat4 LocalToWorldMatrix;"
-
-        "void main()"
-        "{"
-            "gl_Position = WorldToViewportMatrix * LocalToWorldMatrix * vec4(position.xyz, 1.0);"
-            "UV = uvCoordinates;"
-        "}";
-
-static const char test_fragment_shader[] = ""
-        "#version 330\n"
-
-        "in vec2 UV;"
-
-        "out vec4 outColor;"
-
-        "uniform sampler2D Texture1;"
-        "uniform vec4 BaseColor;"
-
-        "void main()"
-        "{"
-            "outColor = texture2D(Texture1, UV) * BaseColor;"
-        "}";
-
-static const char test_texture[] = {
-    (char)255, (char)255, (char)255, (char)255
-};
-
-static const float test_vbo[] = {
-    -0.5f, 0.5f, 0, 0, 0,
-    0.5f, 0.5f, 0, 0, 1,
-    0.5f, -0.5f, 0, 1, 1,
-    -0.5f, -0.5f, 0, 1, 0,
-};
-
-static const int test_ebo[] = {
-    0, 1, 3,
-    1, 2, 3
-};
-
-void print_mat4x4(mat4x4 m)
-{
-    printf("[%f, %f, %f, %f]\n", m[0][0], m[0][1], m[0][2], m[0][3]);
-    printf("[%f, %f, %f, %f]\n", m[1][0], m[1][1], m[1][2], m[1][3]);
-    printf("[%f, %f, %f, %f]\n", m[2][0], m[2][1], m[2][2], m[2][3]);
-    printf("[%f, %f, %f, %f]\n", m[3][0], m[3][1], m[3][2], m[3][3]);
-}
-
 void openlibs(lua_State *L)
 {
     luaopen_base(L);
