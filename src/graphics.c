@@ -3,55 +3,56 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include <GL/glew.h>
 
-graphics_context *graphics_context_create()
+#ifdef USE_OPENGL
+#include <GL/glew.h>
+#endif
+
+void graphics_context_init(graphics_context *context)
 {
-    graphics_context *ctx = (graphics_context*)calloc(1, sizeof(graphics_context));
-    return ctx;
+    memset(context, 0, sizeof(graphics_context));
+    context->is_valid = 1;
 }
 
-void graphics_context_destroy(graphics_context **context)
+void graphics_context_destroy(graphics_context *context)
 {
-    graphics_context *ctx = *context;
-
     for(int i = 0; i < ARRSIZE_RESERVE; i++) {
-        if(ctx->shaders[i]) {
+        if(context->shaders[i]) {
             for(int ii = 0; ii < ARRSIZE_SHADER; ii++) {
-                graphics_shader *s = &(ctx->shaders[i][ii]);
-                if(s->code)
-                    free(s->code);
+                graphics_shader_destroy(&(context->shaders[i][ii]));
             }
-            free(ctx->shaders[i]);
+            free(context->shaders[i]);
         }
-        if(ctx->shader_programs[i])
-            free(ctx->shader_programs[i]);
-        if(ctx->shader_params[i])
-            free(ctx->shader_params[i]);
-        if(ctx->textures[i]) {
+        if(context->shader_programs[i]) {
+            for(int ii = 0; ii < ARRSIZE_SHADER_PROGRAM; ii++) {
+                graphics_shader_program_destroy(&(context->shader_programs[i][ii]));
+            }
+            free(context->shader_programs[i]);
+        }
+        if(context->shader_params[i]) {
+            free(context->shader_params[i]);
+        }
+        if(context->textures[i]) {
             for(int ii = 0; ii < ARRSIZE_SHADER; ii++) {
-                graphics_texture *t = &(ctx->textures[i][ii]);
-                if(t->data)
-                    free(t->data);
+                graphics_texture_destroy(&(context->textures[i][ii]));
             }
-            free(ctx->textures[i]);
+            free(context->textures[i]);
         }
-        if(ctx->vertex_arrays[i]) {
+        if(context->vertex_arrays[i]) {
             for(int ii = 0; ii < ARRSIZE_SHADER; ii++) {
-                graphics_vertex_array *va = &(ctx->vertex_arrays[i][ii]);
-                if(va->vertex_buffer)
-                    free(va->vertex_buffer);
-                if(va->element_buffer)
-                    free(va->element_buffer);
+                graphics_vertex_array_destroy(&(context->vertex_arrays[i][ii]));
             }
-            free(ctx->vertex_arrays[i]);
+            free(context->vertex_arrays[i]);
         }
-        if(ctx->objects[i])
-            free(ctx->objects[i]);
+        if(context->objects[i]) {
+            for(int ii = 0; ii < ARRSIZE_OBJECT; ii++) {
+                graphics_object_destroy(&(context->objects[i][ii]));
+            }
+            free(context->objects[i]);
+        }
     }
 
-    free(ctx);
-    *context = 0;
+    memset(context, 0, sizeof(graphics_context));
 }
 
 graphics_shader *graphics_shader_create(graphics_context *context, const char *code, graphics_shader_type type)

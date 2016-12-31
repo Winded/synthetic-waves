@@ -36,6 +36,7 @@ int main(int argc, char *argv[])
 
     openlibs(L);
 
+    lua_type_test(L);
     lua_color_test(L);
     lua_math_test(L);
 

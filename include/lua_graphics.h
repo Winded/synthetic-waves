@@ -10,9 +10,11 @@
 #include <lauxlib.h>
 #include <graphics.h>
 
-graphics_context *lua_graphics_to(lua_State *L, int index);
-graphics_context *lua_graphics_check(lua_State *L, int index);
-void lua_graphics_push(lua_State *L, const graphics_context *ctx);
+typedef graphics_context lua_graphics_context;
+
+lua_graphics_context *lua_graphics_to(lua_State *L, int index);
+lua_graphics_context *lua_graphics_check(lua_State *L, int index);
+lua_graphics_context *lua_graphics_new(lua_State *L);
 
 graphics_shader *lua_graphics_shader_check(lua_State *L, int index);
 void lua_graphics_shader_push(lua_State *L, const graphics_shader *shader);

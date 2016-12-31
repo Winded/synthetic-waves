@@ -3,33 +3,34 @@
 #include <lua_math.h>
 #include <lua_color.h>
 
-graphics_context *lua_graphics_to(lua_State *L, int index)
+lua_graphics_context *lua_graphics_to(lua_State *L, int index)
 {
-    graphics_context **ctx = (graphics_context**)lua_touserdata(L, index);
+    lua_graphics_context *ctx = (lua_graphics_context*)lua_touserdata(L, index);
     if(ctx == NULL) luaL_typerror(L, index, "graphicsContext");
-    return *ctx;
+    return ctx;
 }
 
-graphics_context *lua_graphics_check(lua_State *L, int index)
+lua_graphics_context *lua_graphics_check(lua_State *L, int index)
 {
     luaL_checktype(L, index, LUA_TUSERDATA);
-    graphics_context **ctx = (graphics_context**)luaL_checkudata(L, index, "graphicsContext");
+    lua_graphics_context *ctx = (lua_graphics_context*)luaL_checkudata(L, index, "graphicsContext");
     if(ctx == NULL) luaL_typerror(L, index, "graphicsContext");
-    return *ctx;
+    return ctx;
 }
 
-void lua_graphics_push(lua_State *L, const graphics_context *ctx)
+lua_graphics_context *lua_graphics_new(lua_State *L)
 {
-    graphics_context **lctx = (graphics_context**)lua_newuserdata(L, sizeof(graphics_context*));
-    *lctx = ctx;
+    lua_graphics_context *lctx = (lua_graphics_context*)lua_newuserdata(L, sizeof(lua_graphics_context));
+    memset(lctx, 0, sizeof(lua_graphics_context));
     luaL_getmetatable(L, "graphicsContext");
     lua_setmetatable(L, -2);
+    return lctx;
 }
 
 int lua_graphics_create(lua_State *L)
 {
-    graphics_context *ctx = graphics_context_create();
-    lua_graphics_push(L, ctx);
+    lua_graphics_context *ctx = lua_graphics_new(L);
+    graphics_context_init(ctx);
     return 1;
 }
 
@@ -191,11 +192,9 @@ int lua_graphics_refresh_draw_order(lua_State *L)
     return 0;
 }
 
-int lua_graphics_destroy(lua_State *L)
+int lua_graphics_gc(lua_State *L)
 {
-    graphics_context **ctx = luaL_checkudata(L, 1, "graphicsContext");
-    if(ctx == NULL) luaL_typerror(L, 1, "graphicsContext");
-
+    lua_graphics_context *ctx = lua_graphics_check(L, 1);
     graphics_context_destroy(ctx);
     return 0;
 }
@@ -209,7 +208,7 @@ static const luaL_reg lua_graphics_meta[] = {
     {"setShaderParam", lua_graphics_set_shader_param},
     {"deleteShaderParam", lua_graphics_delete_shader_param},
     {"refreshDrawOrder", lua_graphics_refresh_draw_order},
-    {"destroy", lua_graphics_destroy},
+    {"__gc", lua_graphics_gc},
     {0, 0}
 };
 

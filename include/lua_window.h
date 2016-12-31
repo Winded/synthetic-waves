@@ -12,11 +12,20 @@
 #include <lauxlib.h>
 #include "window.h"
 
-window *lua_window_to(lua_State *L, int index);
+#define LUA_WINDOW_MAX_EVENT_HANDLERS 50
 
-window *lua_window_check(lua_State *L, int index);
+typedef struct lua_window
+{
+    window w_handle;
+    int graphics_context_ref;
+    int event_handlers[LUA_WINDOW_MAX_EVENT_HANDLERS];
+} lua_window;
 
-void lua_window_push(lua_State *L, const window *w);
+lua_window *lua_window_to(lua_State *L, int index);
+
+lua_window *lua_window_check(lua_State *L, int index);
+
+lua_window *lua_window_new(lua_State *L);
 
 /**
  * @brief Load the window library into given state

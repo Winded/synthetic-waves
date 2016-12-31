@@ -4,9 +4,12 @@
 #include <GL/glew.h>
 #include <time.h>
 #include <assert.h>
+#include <string.h>
 
-window *window_create(const char *title, int width, int height)
+void window_init(window *w_handle, const char *title, int width, int height)
 {
+    memset(w_handle, 0, sizeof(window));
+
     Uint32 wFlags = SDL_WINDOW_RESIZABLE;
 #ifdef USE_OPENGL
     wFlags |= SDL_WINDOW_OPENGL;
@@ -41,11 +44,10 @@ window *window_create(const char *title, int width, int height)
     glViewport(0, 0, width, height);
 #endif
 
-    window *w_handle = (window*)calloc(1, sizeof(window));
+    w_handle->is_valid = 1;
     w_handle->sdl_window = w;
     w_handle->sdl_render_context = ctx;
-    w_handle->should_close = false;
-    return w_handle;
+    w_handle->should_close = 0;
 }
 
 void window_set_graphics_context(window *w_handle, const graphics_context *context)
@@ -133,16 +135,14 @@ void window_remove_event_callback(window *w_handle, window_event_cb_func cb)
     }
 }
 
-void window_destroy(window **w_handle)
+void window_destroy(window *w_handle)
 {
-    window *w = *w_handle;
+    if(!w_handle->is_valid) return;
 
 #ifdef USE_OPENGL
-    SDL_GL_DeleteContext(w->sdl_render_context);
+    SDL_GL_DeleteContext(w_handle->sdl_render_context);
 #endif
-    SDL_DestroyWindow(w->sdl_window);
+    SDL_DestroyWindow(w_handle->sdl_window);
 
-    free(w);
-
-    *w_handle = 0;
+    memset(w_handle, 0, sizeof(window));
 }

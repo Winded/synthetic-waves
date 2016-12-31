@@ -29,3 +29,19 @@ void lua_type_load(lua_State *L)
     lua_pushcfunction(L, lua_type_ext);
     lua_setglobal(L, "type");
 }
+
+
+void lua_type_test(lua_State *L)
+{
+    int status = luaL_loadfile(L, "../tests/type.lua");
+    if(status) {
+        fprintf(stderr, "Couldn't load file: %s", lua_tostring(L, -1));
+        return 0;
+    }
+
+    int result = lua_pcall(L, 0, LUA_MULTRET, 0);
+    if(result) {
+        fprintf(stderr, "Failed to run script: %s\n", lua_tostring(L, -1));
+        return 0;
+    }
+}

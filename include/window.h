@@ -21,6 +21,8 @@ typedef struct window_event_callback
 
 typedef struct window
 {
+        char is_valid;
+
         SDL_Window *sdl_window;
         void *sdl_render_context;
         graphics_context *g_context;
@@ -37,7 +39,7 @@ typedef struct window
 
 typedef void(*window_event_cb_func)(window*, SDL_Event*, void*);
 
-window *window_create(const char *title, int width, int height);
+void window_init(window *w_handle, const char *title, int width, int height);
 
 void window_set_graphics_context(window *w_handle, const graphics_context *context);
 
@@ -55,6 +57,6 @@ int window_should_close(window *w_handle);
 void window_add_event_callback(window *w_handle, window_event_cb_func cb, void *data);
 void window_remove_event_callback(window *w_handle, window_event_cb_func cb);
 
-void window_destroy(window **w_handle);
+void window_destroy(window *w_handle);
 
 #endif // window_h

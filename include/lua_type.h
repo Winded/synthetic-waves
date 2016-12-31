@@ -11,4 +11,6 @@
 
 void lua_type_load(lua_State *L);
 
+void lua_type_test(lua_State *L);
+
 #endif // lua_type_h

@@ -90,6 +90,8 @@ typedef struct graphics_object {
 } graphics_object;
 
 typedef struct graphics_context {
+        char is_valid;
+
         graphics_shader *shaders[ARRSIZE_RESERVE];
         graphics_shader_program *shader_programs[ARRSIZE_RESERVE];
         graphics_shader_param *shader_params[ARRSIZE_RESERVE];
@@ -102,9 +104,9 @@ typedef struct graphics_context {
         graphics_object *object_draw_array[ARRSIZE_RESERVE * ARRSIZE_OBJECT];
 } graphics_context;
 
-graphics_context *graphics_context_create();
+void graphics_context_init(graphics_context *context);
 
-void graphics_context_destroy(graphics_context **context);
+void graphics_context_destroy(graphics_context *context);
 
 graphics_shader *graphics_shader_create(graphics_context *context, const char *code, graphics_shader_type type);
 void graphics_shader_destroy(graphics_shader *shader);
