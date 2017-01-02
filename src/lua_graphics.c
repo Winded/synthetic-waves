@@ -95,7 +95,7 @@ int lua_graphics_create_vertex_array(lua_State *L)
 
     luaL_checktype(L, 2, LUA_TTABLE);
     int vBufSize = lua_objlen(L, 2);
-    float vBuf[vBufSize];
+    float *vBuf = (float*)malloc(vBufSize * sizeof(float));
     lua_pushnil(L);
     while(lua_next(L, 2)) {
         float value = luaL_checknumber(L, -1);
@@ -107,7 +107,7 @@ int lua_graphics_create_vertex_array(lua_State *L)
 
     luaL_checktype(L, 3, LUA_TTABLE);
     int eBufSize = lua_objlen(L, 3);
-    int eBuf[eBufSize];
+    int *eBuf = (int*)malloc(eBufSize * sizeof(int));
     lua_pushnil(L);
     while(lua_next(L, 3)) {
         int value = luaL_checknumber(L, -1);
@@ -118,6 +118,8 @@ int lua_graphics_create_vertex_array(lua_State *L)
     }
 
     graphics_vertex_array *va = graphics_vertex_array_create(ctx, vBuf, vBufSize, eBuf, eBufSize);
+    free(vBuf);
+    free(eBuf);
     lua_graphics_vertex_array_push(L, va);
     return 1;
 }

@@ -1,5 +1,5 @@
 project(luajogo)
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.1)
 
 set(LUAJIT_DIR thirdparty/luajit)
 set(SDL_DIR thirdparty/sdl)
@@ -26,9 +26,11 @@ include_directories(include
     ${LUAJIT_DIR}/src
     ${SDL_DIR}/include
     ${GLEW_DIR}/include
+    ${CMAKE_CURRENT_BINARY_DIR}/${LUAJIT_DIR}
 )
 
 add_definitions(-DUSE_OPENGL)
+add_definitions(-D_USE_MATH_DEFINES)
 
 if (CMAKE_VERSION VERSION_LESS "3.1")
     if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
