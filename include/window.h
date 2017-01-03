@@ -41,12 +41,16 @@ typedef void(*window_event_cb_func)(window*, SDL_Event*, void*);
 
 void window_init(window *w_handle, const char *title, int width, int height);
 
+void window_open(window *w_handle);
+void window_close(window *w_handle);
+
 void window_set_graphics_context(window *w_handle, const graphics_context *context);
 
 void window_get_clear_color(const window *w_handle, float *color);
 void window_set_clear_color(window *w_handle, const float *color);
 
 float window_get_delta_time(window *w_handle);
+float window_get_time(window *w_handle);
 
 void window_draw(window *w_handle);
 

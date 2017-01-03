@@ -56,7 +56,17 @@ void lua_window_handle_event(window *w, SDL_Event *event, void *data)
             lua_setfield(L, -2, "height");
             lua_call(L, 2, 0);
         }
-        else if(strcmp(name, "onKeyDown") == 0 && event->type == SDL_KEYDOWN) {
+        else if(strcmp(name, "onKeyDown") == 0 && event->type == SDL_KEYDOWN && event->key.repeat == 0) {
+            const char *keyName = SDL_GetKeyName(event->key.keysym.sym);
+            lua_getfield(L, -2, "handler");
+            luaL_checktype(L, -1, LUA_TFUNCTION);
+            lua_pushvalue(L, 1);
+            lua_newtable(L);
+            lua_pushstring(L, keyName);
+            lua_setfield(L, -2, "key");
+            lua_call(L, 2, 0);
+        }
+        else if(strcmp(name, "onKeyUp") == 0 && event->type == SDL_KEYUP && event->key.repeat == 0) {
             const char *keyName = SDL_GetKeyName(event->key.keysym.sym);
             lua_getfield(L, -2, "handler");
             luaL_checktype(L, -1, LUA_TFUNCTION);
@@ -80,6 +90,20 @@ int lua_window_create(lua_State *L)
     window_init(&(w->w_handle), title, width, height);
     window_add_event_callback(&(w->w_handle), lua_window_handle_event, L);
     return 1;
+}
+
+int lua_window_open(lua_State *L)
+{
+    lua_window *w = lua_window_check(L, 1);
+    window_open(&(w->w_handle));
+    return 0;
+}
+
+int lua_window_close(lua_State *L)
+{
+    lua_window *w = lua_window_check(L, 1);
+    window_close(&(w->w_handle));
+    return 0;
 }
 
 int lua_window_graphics_context(lua_State *L)
@@ -208,6 +232,8 @@ int lua_window_gc(lua_State *L)
 }
 
 static const luaL_reg lua_window_meta[] = {
+    {"open", lua_window_open},
+    {"close", lua_window_close},
     {"graphicsContext", lua_window_graphics_context},
     {"setGraphicsContext", lua_window_set_graphics_context},
     {"deltaTime", lua_window_delta_time},

@@ -31,7 +31,7 @@ int lua_math_vec##n##_create(lua_State *L)\
     vec##n v;\
     for(int i = 0; i < n; i++) {\
         if(lua_isnumber(L, i + 1)) {\
-            v[i] = (float)lua_tonumber(L, i + 1);\
+            v[i] = lua_tonumber(L, i + 1);\
         }\
         else {\
             v[i] = 0;\
@@ -540,6 +540,17 @@ int lua_math_mat4x4_perspective(lua_State *L)
     return 0;
 }
 
+int lua_math_mat4x4_look_at(lua_State *L)
+{
+    mat4x4 *m = lua_math_mat4x4_check(L, 1);
+    vec3 *eye = lua_math_vec3_check(L, 2);
+    vec3 *center = lua_math_vec3_check(L, 3);
+    vec3 *up = lua_math_vec3_check(L, 4);
+
+    mat4x4_look_at(m, eye, center, up);
+    return 0;
+}
+
 int lua_math_mat4x4_equals(lua_State *L)
 {
     const mat4x4 *m1 = lua_math_mat4x4_check(L, 1);
@@ -647,6 +658,7 @@ static const luaL_reg lua_math_mat4x4_meta[] = {
     {"scale", lua_math_mat4x4_scale},
     {"ortho", lua_math_mat4x4_ortho},
     {"perspective", lua_math_mat4x4_perspective},
+    {"lookAt", lua_math_mat4x4_look_at},
     {"__eq", lua_math_mat4x4_equals},
     {"__add", lua_math_mat4x4_add},
     {"__sub", lua_math_mat4x4_sub},

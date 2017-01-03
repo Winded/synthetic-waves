@@ -10,7 +10,7 @@ void window_init(window *w_handle, const char *title, int width, int height)
 {
     memset(w_handle, 0, sizeof(window));
 
-    Uint32 wFlags = SDL_WINDOW_RESIZABLE;
+    Uint32 wFlags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN;
 #ifdef USE_OPENGL
     wFlags |= SDL_WINDOW_OPENGL;
 #endif
@@ -50,6 +50,23 @@ void window_init(window *w_handle, const char *title, int width, int height)
     w_handle->should_close = 0;
 }
 
+void window_open(window *w_handle)
+{
+    // Also resets delta time
+    w_handle->time = SDL_GetPerformanceCounter();
+    w_handle->last_time = w_handle->time;
+    if(w_handle->is_valid && (SDL_GetWindowFlags(w_handle->sdl_window) & SDL_WINDOW_HIDDEN) == SDL_WINDOW_HIDDEN) {
+        SDL_ShowWindow(w_handle->sdl_window);
+    }
+}
+
+void window_close(window *w_handle)
+{
+    if(w_handle->is_valid && (SDL_GetWindowFlags(w_handle->sdl_window) & SDL_WINDOW_SHOWN) == SDL_WINDOW_SHOWN) {
+        SDL_HideWindow(w_handle->sdl_window);
+    }
+}
+
 void window_set_graphics_context(window *w_handle, const graphics_context *context)
 {
     w_handle->g_context = context;
@@ -68,6 +85,11 @@ void window_set_clear_color(window *w_handle, const float *color)
 float window_get_delta_time(window *w_handle)
 {
     return (float)((w_handle->time - w_handle->last_time) * 1000 / (double)SDL_GetPerformanceFrequency() * 0.001f);
+}
+
+float window_get_time(window *w_handle)
+{
+    return (float)(w_handle->time * 1000 / (double)SDL_GetPerformanceFrequency() * 0.001f);
 }
 
 void window_draw(window *w_handle)
