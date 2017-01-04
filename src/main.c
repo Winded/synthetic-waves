@@ -6,6 +6,7 @@
 #include <lua_type.h>
 #include <lua_color.h>
 #include <lua_math.h>
+#include <lua_asset.h>
 #include <lua_window.h>
 #include <lua_graphics.h>
 #include <SDL.h>
@@ -26,6 +27,7 @@ void openlibs(lua_State *L)
     lua_type_load(L);
     lua_color_load(L);
     lua_math_load(L);
+    lua_asset_lib_load(L);
     lua_window_load(L);
     lua_graphics_load(L);
 }
