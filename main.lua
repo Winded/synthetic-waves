@@ -77,6 +77,12 @@ local WIDTH = 640;
 local HEIGHT = 480;
 local FOV = 60;
 
+assets.configure({
+    assetSources = {
+        {type = "folder", path = "../assets"}
+    }    
+});
+
 local w = window(WIDTH, HEIGHT, "luajogo example");
 if not w:isValid() then
     return;

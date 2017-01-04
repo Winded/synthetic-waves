@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
     lua_type_test(L);
     lua_color_test(L);
     lua_math_test(L);
+    lua_asset_lib_test(L);
 
     int status = luaL_loadfile(L, "../main.lua");
     if(status) {

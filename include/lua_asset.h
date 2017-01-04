@@ -34,14 +34,23 @@ typedef struct lua_asset {
         lua_asset_source *source;
         lua_asset_loadtype load_type;
         char path[256];
-        int file_descriptor;
+        void *file_descriptor;
         void *buffer;
         int buffer_size;
 } lua_asset;
 
+typedef struct lua_asset_reader {
+        int asset_ref;
+        int cursor;
+} lua_asset_reader;
+
 lua_asset *lua_asset_check(lua_State *L, int index);
 lua_asset *lua_asset_new(lua_State *L);
 
+lua_asset_reader *lua_asset_reader_check(lua_State *L, int index);
+lua_asset_reader *lua_asset_reader_new(lua_State *L);
+
 void lua_asset_lib_load(lua_State *L);
+void lua_asset_lib_test(lua_State *L);
 
 #endif // lua_asset_h
