@@ -1,6 +1,7 @@
 #include <lua_window.h>
 #include <lua_graphics.h>
 #include <lua_color.h>
+#include <lua_util.h>
 #include <GL/glew.h>
 #include <string.h>
 
@@ -232,6 +233,7 @@ int lua_window_gc(lua_State *L)
 }
 
 static const luaL_reg lua_window_meta[] = {
+    {"isValid", lua_util_udata_is_valid},
     {"open", lua_window_open},
     {"close", lua_window_close},
     {"graphicsContext", lua_window_graphics_context},

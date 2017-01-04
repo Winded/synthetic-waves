@@ -78,6 +78,10 @@ local HEIGHT = 480;
 local FOV = 60;
 
 local w = window(WIDTH, HEIGHT, "luajogo example");
+if not w:isValid() then
+    return;
+end
+
 local g = graphicsContext();
 w:setGraphicsContext(g);
 

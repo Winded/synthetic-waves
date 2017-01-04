@@ -10,5 +10,6 @@
 #include <lauxlib.h>
 
 int lua_util_udata_is_valid(lua_State *L);
+int lua_util_udata_ptr_is_valid(lua_State *L);
 
 #endif // lua_util_h

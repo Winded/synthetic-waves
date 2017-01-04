@@ -28,13 +28,23 @@ void window_init(window *w_handle, const char *title, int width, int height)
     // SDL_GL_CONTEXT_CORE gives us only the newer version, deprecated functions are disabled
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-    // 3.2 is part of the modern versions of OpenGL, but most video cards whould be able to run it
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-
-    // Turn on double buffering with a 24bit Z buffer.
-    // You may need to change this to 16 or 32 for your system
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    int v;
+    if(SDL_GL_GetAttribute(GL_VERSION_3_2, &v) && v) {
+        // 3.2 is part of the modern versions of OpenGL, but most video cards whould be able to run it
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+        // Turn on double buffering with a 24bit Z buffer.
+        // You may need to change this to 16 or 32 for your system
+        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+        w_handle->graphics_api = window_opengl_3_2;
+    }
+    // TODO more versions support
+    if(!v) {
+        fprintf(stderr, "Failed to create window; No supported graphics API\n");
+        SDL_GL_DeleteContext(ctx);
+        SDL_DestroyWindow(w);
+        return;
+    }
 
     SDL_GL_SetSwapInterval(1);
 

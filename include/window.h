@@ -13,6 +13,11 @@
 
 #define WINDOW_MAX_CALLBACKS 20
 
+typedef enum window_graphics_api {
+    window_opengl_3_2,
+    // TODO add more support
+} window_graphics_api;
+
 typedef struct window_event_callback
 {
     void(*callback)(struct window*, SDL_Event*, void*);
@@ -24,6 +29,7 @@ typedef struct window
         char is_valid;
 
         SDL_Window *sdl_window;
+        window_graphics_api graphics_api;
         void *sdl_render_context;
         graphics_context *g_context;
 

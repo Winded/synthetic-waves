@@ -197,11 +197,13 @@ int lua_graphics_refresh_draw_order(lua_State *L)
 int lua_graphics_gc(lua_State *L)
 {
     lua_graphics_context *ctx = lua_graphics_check(L, 1);
+    if(!ctx->is_valid) return 0;
     graphics_context_destroy(ctx);
     return 0;
 }
 
 static const luaL_reg lua_graphics_meta[] = {
+    {"isValid", lua_util_udata_is_valid},
     {"createShader", lua_graphics_create_shader},
     {"createShaderProgram", lua_graphics_create_shader_program},
     {"createTexture", lua_graphics_create_texture},
@@ -269,7 +271,7 @@ int lua_graphics_shader_destroy(lua_State *L)
 }
 
 static const luaL_reg lua_graphics_shader_meta[] = {
-    {"isValid", lua_util_udata_is_valid},
+    {"isValid", lua_util_udata_ptr_is_valid},
     {"type", lua_graphics_shader_type},
     {"code", lua_graphics_shader_code},
     {"destroy", lua_graphics_shader_destroy},
@@ -333,7 +335,7 @@ int lua_graphics_shader_program_destroy(lua_State *L)
 }
 
 static const luaL_reg lua_graphics_shader_program_meta[] = {
-    {"isValid", lua_util_udata_is_valid},
+    {"isValid", lua_util_udata_ptr_is_valid},
     {"getShader", lua_graphics_shader_program_get_shader},
     {"destroy", lua_graphics_shader_program_destroy},
     {0, 0}
@@ -428,7 +430,7 @@ int lua_graphics_vertex_array_destroy(lua_State *L)
 }
 
 static const luaL_reg lua_graphics_vertex_array_meta[] = {
-    {"isValid", lua_util_udata_is_valid},
+    {"isValid", lua_util_udata_ptr_is_valid},
     //{"update", lua_graphics_vertex_array_update},
     {"setAttribute", lua_graphics_vertex_array_set_attribute},
     {"destroy", lua_graphics_vertex_array_destroy},
@@ -565,7 +567,7 @@ int lua_graphics_object_delete_shader_param(lua_State *L)
 }
 
 static const luaL_reg lua_graphics_object_meta[] = {
-    {"isValid", lua_util_udata_is_valid},
+    {"isValid", lua_util_udata_ptr_is_valid},
     {"shaderProgram", lua_graphics_object_shader_program},
     {"setShaderProgram", lua_graphics_object_set_shader_program},
     {"texture", lua_graphics_object_texture},
