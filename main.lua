@@ -125,7 +125,7 @@ local function updateWorldToVPMat()
     forward = luajogo.vec3(forward.x, forward.y, forward.z);
     local up = lToW * luajogo.vec4(0, 1, 0, 1);
     up = luajogo.vec3(up.x, up.y, up.z);
-    local camPos = camMat * luajogo.vec4(0, 0, 0, 1);
+    local camPos = lToW * luajogo.vec4(0, 0, 0, 1);
     camPos = luajogo.vec3(camPos.x, camPos.y, camPos.z);
     local viewMat = luajogo.mat4x4();
     viewMat:lookAt(camPos, forward, up - camPos);
@@ -168,14 +168,10 @@ w:addEventCallback("onKeyDown", function(self, data)
         camMovement = luajogo.vec3(-1, camMovement.y, camMovement.z);
     elseif k == "d" then
         camMovement = luajogo.vec3(1, camMovement.y, camMovement.z);
-    elseif k == "q" then
-        camRotation = luajogo.vec3(camRotation.x, -45, camRotation.z);
-    elseif k == "e" then
-        camRotation = luajogo.vec3(camRotation.x, 45, camRotation.z);
-    elseif k == "z" then
-        camRotation = luajogo.vec3(-45, camRotation.y, camRotation.z);
-    elseif k == "x" then
-        camRotation = luajogo.vec3(45, camRotation.y, camRotation.z);
+    elseif k == "r" then
+        local pos = camMat * luajogo.vec4(0, 0, 0, 1);
+        camMat = luajogo.mat4x4();
+        camMat:translateInPlace(luajogo.vec3(pos.x, pos.y, pos.z));
     elseif k == "space" then
         rotateBox = not rotateBox;
     end
@@ -188,15 +184,27 @@ w:addEventCallback("onKeyUp", function(self, data)
         camMovement = luajogo.vec3(camMovement.x, camMovement.y, 0);
     elseif k == "a" or k == "d" then
         camMovement = luajogo.vec3(0, camMovement.y, camMovement.z);
-    elseif k == "q" or k == "e" then
-        camRotation = luajogo.vec3(camRotation.x, 0, camRotation.z);
-    elseif k == "z" or k == "x" then
-        camRotation = luajogo.vec3(0, camRotation.y, camRotation.z);
+    end
+end);
+
+w:addEventCallback("onMouseDown", function(self, data)
+    if data.button == 1 then
+        luajogo.input.setRelativeMouse(true);
+    end
+end);
+
+w:addEventCallback("onMouseUp", function(self, data)
+    if data.button == 1 then
+        luajogo.input.setRelativeMouse(false);
+        camRotation = luajogo.vec3();
     end
 end);
 
 w:addEventCallback("onMouseMove", function(self, data)
-    print("Mouse moved: " .. tostring(luajogo.vec2(data.x, data.y)) .. ", delta: " .. tostring(luajogo.vec2(data.xrel, data.yrel)));
+    if luajogo.input.getRelativeMouse() then
+        local delta = luajogo.vec2(data.xrel, data.yrel) * 0.5;
+        camMat:rotateEuler(luajogo.vec3(-delta.y, delta.x, 0));
+    end
 end);
 
 w:open();

@@ -10,13 +10,14 @@
 #include <lua_texture.h>
 #include <lua_window.h>
 #include <lua_graphics.h>
+#include <lua_input.h>
 #include <SDL.h>
 #include <window.h>
 #include <graphics.h>
 
 void openlibs(lua_State *L)
 {
-    // Standard libraries
+    // Standard lua libraries
     luaopen_base(L);
     luaopen_table(L);
     luaopen_io(L);
@@ -26,12 +27,14 @@ void openlibs(lua_State *L)
     luaopen_debug(L);
     //luaopen_package(L);
 
-    // luajogo libraries. All native libs are contained in the lj table
+    // luajogo libraries. All native libs are contained in the luajogo table
     lua_newtable(L);
 
     lua_type_load(L);
     lua_color_load(L);
     lua_math_load(L);
+
+    lua_input_load(L);
 
     lua_asset_lib_load(L);
     lua_texture_load_lib(L);
