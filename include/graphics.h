@@ -20,6 +20,10 @@
 
 #include <stdlib.h>
 
+typedef enum {
+    graphics_feature_depth_test
+} graphics_feature;
+
 typedef enum graphics_shader_type {
     graphics_vertex_shader,
     graphics_fragment_shader
@@ -105,6 +109,8 @@ typedef struct graphics_context {
 } graphics_context;
 
 void graphics_context_init(graphics_context *context);
+
+void graphics_set_feature(graphics_context *ctx, graphics_feature feature, int enabled);
 
 void graphics_context_destroy(graphics_context *context);
 

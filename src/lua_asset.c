@@ -144,7 +144,7 @@ void lua_asset_load_data(lua_asset *asset)
 #endif
 
         if(asset->load_type == lua_asset_loadtype_full) {
-            FILE *f = fopen(fullPath, "r");
+            FILE *f = fopen(fullPath, "rb");
             fseek(f, 0, SEEK_END);
             int size = ftell(f);
             fseek(f, 0, SEEK_SET);

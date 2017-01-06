@@ -2,6 +2,8 @@
 #include <lua_util.h>
 #include <lua_math.h>
 #include <lua_color.h>
+#include <lua_texture.h>
+#include <memory.h>
 
 lua_graphics_context *lua_graphics_to(lua_State *L, int index)
 {
@@ -31,6 +33,7 @@ int lua_graphics_create(lua_State *L)
 {
     lua_graphics_context *ctx = lua_graphics_new(L);
     graphics_context_init(ctx);
+    graphics_set_feature(ctx, graphics_feature_depth_test, 1);
     return 1;
 }
 
@@ -59,32 +62,14 @@ int lua_graphics_create_shader_program(lua_State *L)
 int lua_graphics_create_texture(lua_State *L)
 {
     graphics_context *ctx = lua_graphics_check(L, 1);
-    int width = luaL_checkinteger(L, 3);
-    int height = luaL_checkinteger(L, 4);
+    const lua_texture *texture = lua_texture_check(L, 2);
 
-    if(lua_isuserdata(L, 2)) {
-        // TODO lua_asset_data loading
-        lua_pushnil(L);
-        return 1;
-    }
-    else if(lua_istable(L, 2)) {
-        char *data = (char*)malloc(sizeof(char) * width * height * 4);
-        lua_pushnil(L);
-        while(lua_next(L, 2)) {
-            int value = luaL_checkinteger(L, -1);
-            int idx = luaL_checkinteger(L, -2) - 1;
-            if(idx >= 0 && idx < width * height * 4)
-                data[idx] = (char)value;
-            lua_pop(L, 1);
-        }
-        graphics_texture *t = graphics_texture_create(ctx, data, width, height);
-        lua_graphics_texture_push(L, t);
-        return 1;
-    }
-    else {
-        luaL_typerror(L, 2, "assetData or table");
-        return 0;
-    }
+    void *data = malloc(texture->data_size);
+    memcpy(data, texture->data, texture->data_size);
+    graphics_texture *t = graphics_texture_create(ctx, data, texture->width, texture->height);
+    lua_graphics_texture_push(L, t);
+
+    return 1;
 }
 
 int lua_graphics_create_vertex_array(lua_State *L)

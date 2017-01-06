@@ -37,12 +37,12 @@ local BOX = {
     vbuf = {
         -0.5, -0.5, 0.5, 0, 0,
         -0.5, -0.5, -0.5, 0, 0,
-        -0.5, 0.5, -0.5, 0, 0,
-        -0.5, 0.5, 0.5, 0, 0,
-        0.5, -0.5, 0.5, 0, 0,
-        0.5, -0.5, -0.5, 0, 0,
-        0.5, 0.5, -0.5, 0, 0,
-        0.5, 0.5, 0.5, 0, 0,
+        -0.5, 0.5, -0.5, 0, 1,
+        -0.5, 0.5, 0.5, 0, 1,
+        0.5, -0.5, 0.5, 1, 0,
+        0.5, -0.5, -0.5, 1, 0,
+        0.5, 0.5, -0.5, 1, 1,
+        0.5, 0.5, 0.5, 1, 1,
     },
     ebuf = {
         3, 2, 1,
@@ -83,6 +83,10 @@ assets.configure({
     }    
 });
 
+local tex = texture.load("/tileset.png");
+print(tex);
+print(tex:getPixel(10, 10));
+
 local w = window(WIDTH, HEIGHT, "luajogo example");
 if not w:isValid() then
     return;
@@ -95,7 +99,7 @@ local vertexShader = g:createShader(VERTEX_CODE, VERTEX_SHADER);
 local fragmentShader = g:createShader(FRAGMENT_CODE, FRAGMENT_SHADER);
 local program = g:createShaderProgram(vertexShader, fragmentShader);
 
-local texture = g:createTexture({255, 255, 255, 255}, 1, 1);
+local texture = g:createTexture(tex);
 
 local box = g:createVertexArray(BOX.vbuf, BOX.ebuf);
 box:setAttribute(0, 3);
@@ -115,7 +119,7 @@ local function updateWorldToVPMat()
     local aspectRatio = WIDTH / HEIGHT;
     local orthoWidth = orthoScale * aspectRatio;
     local orthoHeight = orthoScale;
-    projMat:perspective(FOV, aspectRatio, 0, 100);
+    projMat:perspective(FOV, aspectRatio, 0.5, 500);
     local lToW = camMat;
     local forward = lToW * vec4(0, 0, -1, 1);
     forward = vec3(forward.x, forward.y, forward.z);
@@ -131,7 +135,7 @@ end
 
 updateWorldToVPMat();
 
-g:setShaderParam("BaseColor", color("red"));
+g:setShaderParam("BaseColor", color("white"));
 
 local gObj = g:createObject();
 gObj:setShaderProgram(program);

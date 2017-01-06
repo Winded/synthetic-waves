@@ -31,15 +31,15 @@ int lua_color_create(lua_State *L)
     memset(c, 0, sizeof(lua_color));
 
     if(lua_isnumber(L, 1)) {
-        c[0] = luaL_checkinteger(L, 1);
+        c[0] = (unsigned char)luaL_checkinteger(L, 1);
         if(lua_isnumber(L, 2)) {
-            c[1] = luaL_checkinteger(L, 2);
+            c[1] = (unsigned char)luaL_checkinteger(L, 2);
         }
         if(lua_isnumber(L, 3)) {
-            c[2] = luaL_checkinteger(L, 3);
+            c[2] = (unsigned char)luaL_checkinteger(L, 3);
         }
         if(lua_isnumber(L, 4)) {
-            c[3] = luaL_checkinteger(L, 4);
+            c[3] = (unsigned char)luaL_checkinteger(L, 4);
         }
     }
     else if(lua_isstring(L, 1)) {
@@ -82,19 +82,19 @@ int lua_color_index(lua_State *L)
     const char *idx = luaL_checkstring(L, 2);
 
     if(strcmp(idx, "r") == 0) {
-        lua_pushinteger(L, (*c)[0]);
+        lua_pushinteger(L, ((int)(*c)[0]));
         return 1;
     }
     else if(strcmp(idx, "g") == 0) {
-        lua_pushinteger(L, (*c)[1]);
+        lua_pushinteger(L, ((int)(*c)[1]));
         return 1;
     }
     else if(strcmp(idx, "b") == 0) {
-        lua_pushinteger(L, (*c)[2]);
+        lua_pushinteger(L, ((int)(*c)[2]));
         return 1;
     }
     else if(strcmp(idx, "a") == 0) {
-        lua_pushinteger(L, (*c)[3]);
+        lua_pushinteger(L, ((int)(*c)[3]));
         return 1;
     }
 
@@ -110,16 +110,16 @@ int lua_color_newindex(lua_State *L)
     int value = luaL_checkinteger(L, 3);
 
     if(strcmp(idx, "r") == 0) {
-        (*c)[0] = value;
+        (*c)[0] = (unsigned char)value;
     }
     else if(strcmp(idx, "g") == 0) {
-        (*c)[1] = value;
+        (*c)[1] = (unsigned char)value;
     }
     else if(strcmp(idx, "b") == 0) {
-        (*c)[2] = value;
+        (*c)[2] = (unsigned char)value;
     }
     else if(strcmp(idx, "a") == 0) {
-        (*c)[3] = value;
+        (*c)[3] = (unsigned char)value;
     }
     else {
         luaL_error(L, "Cannot assign invalid index %s", idx);

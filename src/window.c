@@ -36,6 +36,7 @@ void window_init(window *w_handle, const char *title, int width, int height)
         // Turn on double buffering with a 24bit Z buffer.
         // You may need to change this to 16 or 32 for your system
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+        SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
         w_handle->graphics_api = window_opengl_3_2;
     }
     // TODO more versions support

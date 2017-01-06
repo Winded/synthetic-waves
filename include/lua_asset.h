@@ -44,6 +44,8 @@ typedef struct lua_asset_reader {
         int cursor;
 } lua_asset_reader;
 
+int lua_asset_load(lua_State *L);
+
 lua_asset *lua_asset_check(lua_State *L, int index);
 lua_asset *lua_asset_new(lua_State *L);
 

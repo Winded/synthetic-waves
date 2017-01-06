@@ -14,6 +14,24 @@ void graphics_context_init(graphics_context *context)
     context->is_valid = 1;
 }
 
+void graphics_set_feature(graphics_context *ctx, graphics_feature feature, int enabled)
+{
+    switch(feature) {
+    case graphics_feature_depth_test:
+#ifdef USE_OPENGL
+        if(enabled) {
+            glEnable(GL_DEPTH_TEST);
+            glDepthFunc(GL_LEQUAL);
+        }
+        else
+            glDisable(GL_DEPTH_TEST);
+#endif
+        break;
+    default:
+        break;
+    }
+}
+
 void graphics_context_destroy(graphics_context *context)
 {
     for(int i = 0; i < ARRSIZE_RESERVE; i++) {
@@ -611,6 +629,9 @@ void graphics_clear(graphics_context *context, float *color)
 {
 #ifdef USE_OPENGL
     glClearColor(color[0], color[1], color[2], color[3]);
-    glClear(GL_COLOR_BUFFER_BIT);
+    GLbitfield clearFlags = GL_COLOR_BUFFER_BIT;
+    if(glIsEnabled(GL_DEPTH_TEST))
+        clearFlags |= GL_DEPTH_BUFFER_BIT;
+    glClear(clearFlags);
 #endif
 }

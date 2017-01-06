@@ -9,7 +9,7 @@
 #include <lua.h>
 #include <lauxlib.h>
 
-typedef int lua_color[4];
+typedef unsigned char lua_color[4];
 
 lua_color *lua_color_to(lua_State *L, int index);
 lua_color *lua_color_check(lua_State *L, int index);
