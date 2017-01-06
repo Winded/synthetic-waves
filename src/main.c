@@ -16,6 +16,7 @@
 
 void openlibs(lua_State *L)
 {
+    // Standard libraries
     luaopen_base(L);
     luaopen_table(L);
     luaopen_io(L);
@@ -24,6 +25,9 @@ void openlibs(lua_State *L)
     luaopen_math(L);
     luaopen_debug(L);
     //luaopen_package(L);
+
+    // luajogo libraries. All native libs are contained in the lj table
+    lua_newtable(L);
 
     lua_type_load(L);
     lua_color_load(L);
@@ -34,6 +38,8 @@ void openlibs(lua_State *L)
 
     lua_window_load(L);
     lua_graphics_load(L);
+
+    lua_setglobal(L, "luajogo");
 }
 
 int main(int argc, char *argv[])

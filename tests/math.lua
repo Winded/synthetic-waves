@@ -1,6 +1,11 @@
 print("-----");
 print("PERFORMING MATH TESTS");
 
+local vec2 = luajogo.vec2;
+local vec3 = luajogo.vec3;
+local vec4 = luajogo.vec4;
+local mat4x4 = luajogo.mat4x4;
+
 local v = vec3(1, 2, 3);
 
 print("vec3 = " .. tostring(v));

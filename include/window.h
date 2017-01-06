@@ -55,6 +55,12 @@ void window_set_graphics_context(window *w_handle, const graphics_context *conte
 void window_get_clear_color(const window *w_handle, float *color);
 void window_set_clear_color(window *w_handle, const float *color);
 
+void window_get_position(window *w_handle, int *x, int *y);
+void window_set_position(window *w_handle, int x, int y);
+
+void window_get_size(window *w_handle, int *width, int *height);
+void window_set_size(window *w_handle, int width, int height);
+
 float window_get_delta_time(window *w_handle);
 float window_get_time(window *w_handle);
 

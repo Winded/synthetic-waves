@@ -152,14 +152,15 @@ static const luaL_reg lua_color_meta[] = {
 
 void lua_color_load(lua_State *L)
 {
-    lua_pushcfunction(L, lua_color_create);
-    lua_setglobal(L, "color");
     luaL_newmetatable(L, "color");
     luaL_openlib(L, 0, lua_color_meta, 0);
     lua_pushliteral(L, "__metatable");
     lua_pushvalue(L, -2);
     lua_rawset(L, -3);
     lua_pop(L, 1);
+
+    lua_pushcfunction(L, lua_color_create);
+    lua_setfield(L, -2, "color");
 }
 
 void lua_color_test(lua_State *L)

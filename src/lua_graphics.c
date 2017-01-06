@@ -203,8 +203,6 @@ static const luaL_reg lua_graphics_meta[] = {
 
 void lua_graphics_ctx_load(lua_State *L)
 {
-    lua_pushcfunction(L, lua_graphics_create);
-    lua_setglobal(L, "graphicsContext");
     luaL_newmetatable(L, "graphicsContext");
     luaL_openlib(L, 0, lua_graphics_meta, 0);
     lua_pushliteral(L, "__index");
@@ -265,10 +263,6 @@ static const luaL_reg lua_graphics_shader_meta[] = {
 
 void lua_graphics_shader_load(lua_State *L)
 {
-    lua_pushinteger(L, graphics_vertex_shader);
-    lua_setglobal(L, "VERTEX_SHADER");
-    lua_pushinteger(L, graphics_fragment_shader);
-    lua_setglobal(L, "FRAGMENT_SHADER");
     luaL_newmetatable(L, "graphicsShader");
     luaL_openlib(L, 0, lua_graphics_shader_meta, 0);
     lua_pushliteral(L, "__index");
@@ -278,6 +272,11 @@ void lua_graphics_shader_load(lua_State *L)
     lua_pushvalue(L, -2);
     lua_rawset(L, -3);
     lua_pop(L, 1);
+
+    lua_pushinteger(L, graphics_vertex_shader);
+    lua_setfield(L, -2, "VERTEX_SHADER");
+    lua_pushinteger(L, graphics_fragment_shader);
+    lua_setfield(L, -2, "FRAGMENT_SHADER");
 }
 
 graphics_shader_program *lua_graphics_shader_program_check(lua_State *L, int index)
@@ -585,4 +584,7 @@ void lua_graphics_load(lua_State *L)
     lua_graphics_texture_load(L);
     lua_graphics_vertex_array_load(L);
     lua_graphics_object_load(L);
+
+    lua_pushcfunction(L, lua_graphics_create);
+    lua_setfield(L, -2, "graphicsContext");
 }

@@ -42,41 +42,56 @@ void lua_window_handle_event(window *w, SDL_Event *event, void *data)
             lua_pop(L, 1);
             continue;
         }
+
         lua_getfield(L, -1, "name");
         const char *name = luaL_checkstring(L, -1);
+        lua_getfield(L, -2, "handler");
+        luaL_checktype(L, -1, LUA_TFUNCTION);
+        lua_pushvalue(L, 1);
+
         if(strcmp(name, "onWindowResize") == 0 && event->type == SDL_WINDOWEVENT && event->window.event == SDL_WINDOWEVENT_RESIZED) {
             int width, height;
             SDL_GetWindowSize(SDL_GetWindowFromID(event->window.windowID), &width, &height);
-            lua_getfield(L, -2, "handler");
-            luaL_checktype(L, -1, LUA_TFUNCTION);
-            lua_pushvalue(L, 1);
             lua_newtable(L);
             lua_pushinteger(L, width);
             lua_setfield(L, -2, "width");
             lua_pushinteger(L, height);
             lua_setfield(L, -2, "height");
-            lua_call(L, 2, 0);
         }
-        else if(strcmp(name, "onKeyDown") == 0 && event->type == SDL_KEYDOWN && event->key.repeat == 0) {
+        else if(((strcmp(name, "onKeyDown") == 0 && event->type == SDL_KEYDOWN) || (strcmp(name, "onKeyUp") == 0 && event->type == SDL_KEYUP)) && event->key.repeat == 0) {
             const char *keyName = SDL_GetKeyName(event->key.keysym.sym);
-            lua_getfield(L, -2, "handler");
-            luaL_checktype(L, -1, LUA_TFUNCTION);
-            lua_pushvalue(L, 1);
             lua_newtable(L);
             lua_pushstring(L, keyName);
             lua_setfield(L, -2, "key");
-            lua_call(L, 2, 0);
         }
-        else if(strcmp(name, "onKeyUp") == 0 && event->type == SDL_KEYUP && event->key.repeat == 0) {
-            const char *keyName = SDL_GetKeyName(event->key.keysym.sym);
-            lua_getfield(L, -2, "handler");
-            luaL_checktype(L, -1, LUA_TFUNCTION);
-            lua_pushvalue(L, 1);
+        else if((strcmp(name, "onMouseDown") == 0 && event->type == SDL_MOUSEBUTTONDOWN) || (strcmp(name, "onMouseUp") == 0 && event->type == SDL_MOUSEBUTTONUP)) {
             lua_newtable(L);
-            lua_pushstring(L, keyName);
-            lua_setfield(L, -2, "key");
-            lua_call(L, 2, 0);
+            lua_pushinteger(L, event->button.button);
+            lua_setfield(L, -2, "button");
+            lua_pushinteger(L, event->button.clicks);
+            lua_setfield(L, -2, "clicks");
+            lua_pushinteger(L, event->button.x);
+            lua_setfield(L, -2, "x");
+            lua_pushinteger(L, event->button.y);
+            lua_setfield(L, -2, "y");
         }
+        else if(strcmp(name, "onMouseMove") == 0 && event->type == SDL_MOUSEMOTION) {
+            lua_newtable(L);
+            lua_pushinteger(L, event->motion.x);
+            lua_setfield(L, -2, "x");
+            lua_pushinteger(L, event->motion.y);
+            lua_setfield(L, -2, "y");
+            lua_pushinteger(L, event->motion.xrel);
+            lua_setfield(L, -2, "xrel");
+            lua_pushinteger(L, event->motion.yrel);
+            lua_setfield(L, -2, "yrel");
+        }
+        else {
+            lua_pop(L, 4);
+            continue;
+        }
+
+        lua_call(L, 2, 0);
         lua_pop(L, 2);
     }
 }
@@ -92,6 +107,11 @@ int lua_window_create(lua_State *L)
     window_add_event_callback(&(w->w_handle), lua_window_handle_event, L);
     return 1;
 }
+
+static luaL_reg lua_window_lib[] = {
+    {"create", lua_window_create},
+    {0, 0}
+};
 
 int lua_window_open(lua_State *L)
 {
@@ -168,6 +188,65 @@ int lua_window_set_clear_color(lua_State *L)
     return 0;
 }
 
+int lua_window_position(lua_State *L)
+{
+    lua_window *w = lua_window_check(L, 1);
+    int x, y;
+    window_get_position(&(w->w_handle), &x, &y);
+    lua_pushinteger(L, x);
+    lua_pushinteger(L, y);
+    return 2;
+}
+
+int lua_window_set_position(lua_State *L)
+{
+    lua_window *w = lua_window_check(L, 1);
+    int x = luaL_checkinteger(L, 2);
+    int y = luaL_checkinteger(L, 3);
+    window_set_position(&(w->w_handle), x, y);
+    return 0;
+}
+
+int lua_window_size(lua_State *L)
+{
+    lua_window *w = lua_window_check(L, 1);
+    int width, height;
+    window_get_size(&(w->w_handle), &width, &height);
+    lua_pushinteger(L, width);
+    lua_pushinteger(L, height);
+    return 2;
+}
+
+int lua_window_set_size(lua_State *L)
+{
+    lua_window *w = lua_window_check(L, 1);
+    int width = luaL_checkinteger(L, 2);
+    int height = luaL_checkinteger(L, 3);
+    window_set_size(&(w->w_handle), width, height);
+    return 0;
+}
+
+int lua_window_maximize(lua_State *L)
+{
+    lua_window *w = lua_window_check(L, 1);
+    SDL_MaximizeWindow(&(w->w_handle));
+    return 0;
+}
+
+int lua_window_minimize(lua_State *L)
+{
+    lua_window *w = lua_window_check(L, 1);
+    SDL_MinimizeWindow(&(w->w_handle));
+    return 0;
+}
+
+int lua_window_restore(lua_State *L)
+{
+    lua_window *w = lua_window_check(L, 1);
+    SDL_RestoreWindow(&(w->w_handle));
+    return 0;
+}
+
 int lua_window_should_close(lua_State *L)
 {
     lua_window *w = lua_window_check(L, 1);
@@ -241,6 +320,13 @@ static const luaL_reg lua_window_meta[] = {
     {"deltaTime", lua_window_delta_time},
     {"clearColor", lua_window_get_clear_color},
     {"setClearColor", lua_window_set_clear_color},
+    {"position", lua_window_position},
+    {"setPosition", lua_window_set_position},
+    {"size", lua_window_size},
+    {"setSize", lua_window_set_size},
+    {"maximize", lua_window_maximize},
+    {"minimize", lua_window_minimize},
+    {"restore", lua_window_restore},
     {"shouldClose", lua_window_should_close},
     {"pollEvents", lua_window_poll_events},
     {"draw", lua_window_draw},
@@ -252,8 +338,6 @@ static const luaL_reg lua_window_meta[] = {
 
 void lua_window_load(lua_State *L)
 {
-    lua_pushcfunction(L, lua_window_create);
-    lua_setglobal(L, "window");
     luaL_newmetatable(L, "window");
     luaL_openlib(L, 0, lua_window_meta, 0);
     lua_pushliteral(L, "__index");
@@ -263,4 +347,8 @@ void lua_window_load(lua_State *L)
     lua_pushvalue(L, -2);
     lua_rawset(L, -3);
     lua_pop(L, 1);
+
+    lua_newtable(L);
+    luaL_openlib(L, 0, lua_window_lib, 0);
+    lua_setfield(L, -2, "window");
 }

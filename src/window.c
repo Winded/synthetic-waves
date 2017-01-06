@@ -93,6 +93,26 @@ void window_set_clear_color(window *w_handle, const float *color)
     memcpy(w_handle->clear_color, color, sizeof(float) * 4);
 }
 
+void window_get_position(window *w_handle, int *x, int *y)
+{
+    SDL_GetWindowPosition(w_handle->sdl_window, x, y);
+}
+
+void window_set_position(window *w_handle, int x, int y)
+{
+    SDL_SetWindowPosition(w_handle->sdl_window, x, y);
+}
+
+void window_get_size(window *w_handle, int *width, int *height)
+{
+    SDL_GetWindowSize(w_handle->sdl_window, width, height);
+}
+
+void window_set_size(window *w_handle, int width, int height)
+{
+    SDL_SetWindowSize(w_handle->sdl_window, width, height);
+}
+
 float window_get_delta_time(window *w_handle)
 {
     return (float)((w_handle->time - w_handle->last_time) * 1000 / (double)SDL_GetPerformanceFrequency() * 0.001f);

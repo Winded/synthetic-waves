@@ -77,26 +77,26 @@ local WIDTH = 640;
 local HEIGHT = 480;
 local FOV = 60;
 
-assets.configure({
+luajogo.assets.configure({
     assetSources = {
         {type = "folder", path = "../assets"}
     }    
 });
 
-local tex = texture.load("/tileset.png");
+local tex = luajogo.texture.load("/tileset.png");
 print(tex);
 print(tex:getPixel(10, 10));
 
-local w = window(WIDTH, HEIGHT, "luajogo example");
+local w = luajogo.window.create(WIDTH, HEIGHT, "luajogo example");
 if not w:isValid() then
     return;
 end
 
-local g = graphicsContext();
+local g = luajogo.graphicsContext();
 w:setGraphicsContext(g);
 
-local vertexShader = g:createShader(VERTEX_CODE, VERTEX_SHADER);
-local fragmentShader = g:createShader(FRAGMENT_CODE, FRAGMENT_SHADER);
+local vertexShader = g:createShader(VERTEX_CODE, luajogo.VERTEX_SHADER);
+local fragmentShader = g:createShader(FRAGMENT_CODE, luajogo.FRAGMENT_SHADER);
 local program = g:createShaderProgram(vertexShader, fragmentShader);
 
 local texture = g:createTexture(tex);
@@ -109,25 +109,25 @@ local quad = g:createVertexArray(QUAD.vbuf, QUAD.ebuf);
 quad:setAttribute(0, 3);
 quad:setAttribute(1, 2);
 
-local camMat = mat4x4();
-camMat:translateInPlace(vec3(0, 0, 2));
-local camMovement = vec3();
-local camRotation = vec3();
+local camMat = luajogo.mat4x4();
+camMat:translateInPlace(luajogo.vec3(0, 0, 2));
+local camMovement = luajogo.vec3();
+local camRotation = luajogo.vec3();
 local function updateWorldToVPMat()
-    local projMat = mat4x4();
+    local projMat = luajogo.mat4x4();
     local orthoScale = 5;
     local aspectRatio = WIDTH / HEIGHT;
     local orthoWidth = orthoScale * aspectRatio;
     local orthoHeight = orthoScale;
     projMat:perspective(FOV, aspectRatio, 0.5, 500);
     local lToW = camMat;
-    local forward = lToW * vec4(0, 0, -1, 1);
-    forward = vec3(forward.x, forward.y, forward.z);
-    local up = lToW * vec4(0, 1, 0, 1);
-    up = vec3(up.x, up.y, up.z);
-    local camPos = camMat * vec4(0, 0, 0, 1);
-    camPos = vec3(camPos.x, camPos.y, camPos.z);
-    local viewMat = mat4x4();
+    local forward = lToW * luajogo.vec4(0, 0, -1, 1);
+    forward = luajogo.vec3(forward.x, forward.y, forward.z);
+    local up = lToW * luajogo.vec4(0, 1, 0, 1);
+    up = luajogo.vec3(up.x, up.y, up.z);
+    local camPos = camMat * luajogo.vec4(0, 0, 0, 1);
+    camPos = luajogo.vec3(camPos.x, camPos.y, camPos.z);
+    local viewMat = luajogo.mat4x4();
     viewMat:lookAt(camPos, forward, up - camPos);
     local wToVP = projMat * viewMat;
     g:setShaderParam("WorldToViewportMatrix", wToVP);
@@ -135,7 +135,7 @@ end
 
 updateWorldToVPMat();
 
-g:setShaderParam("BaseColor", color("white"));
+g:setShaderParam("BaseColor", luajogo.color("white"));
 
 local gObj = g:createObject();
 gObj:setShaderProgram(program);
@@ -143,14 +143,14 @@ gObj:setTexture(texture);
 --gObj:setVertexArray(quad);
 gObj:setVertexArray(box);
 
-w:setClearColor(color(150, 150, 150, 255));
+w:setClearColor(luajogo.color(150, 150, 150, 255));
 g:refreshDrawOrder();
 
-local lToWMat = mat4x4();
+local lToWMat = luajogo.mat4x4();
 gObj:setShaderParam("LocalToWorldMatrix", lToWMat);
 
 local rotateBox = false;
-local rotateDir = vec3(1, 1, 1);
+local rotateDir = luajogo.vec3(1, 1, 1);
 
 w:addEventCallback("onWindowResize", function(self, data)
     WIDTH = data.width;
@@ -161,21 +161,21 @@ end);
 w:addEventCallback("onKeyDown", function(self, data)
     local k = data.key:lower();
     if k == "w" then
-        camMovement = vec3(camMovement.x, camMovement.y, -1);
+        camMovement = luajogo.vec3(camMovement.x, camMovement.y, -1);
     elseif k == "s" then
-        camMovement = vec3(camMovement.x, camMovement.y, 1);
+        camMovement = luajogo.vec3(camMovement.x, camMovement.y, 1);
     elseif k == "a" then
-        camMovement = vec3(-1, camMovement.y, camMovement.z);
+        camMovement = luajogo.vec3(-1, camMovement.y, camMovement.z);
     elseif k == "d" then
-        camMovement = vec3(1, camMovement.y, camMovement.z);
+        camMovement = luajogo.vec3(1, camMovement.y, camMovement.z);
     elseif k == "q" then
-        camRotation = vec3(camRotation.x, -45, camRotation.z);
+        camRotation = luajogo.vec3(camRotation.x, -45, camRotation.z);
     elseif k == "e" then
-        camRotation = vec3(camRotation.x, 45, camRotation.z);
+        camRotation = luajogo.vec3(camRotation.x, 45, camRotation.z);
     elseif k == "z" then
-        camRotation = vec3(-45, camRotation.y, camRotation.z);
+        camRotation = luajogo.vec3(-45, camRotation.y, camRotation.z);
     elseif k == "x" then
-        camRotation = vec3(45, camRotation.y, camRotation.z);
+        camRotation = luajogo.vec3(45, camRotation.y, camRotation.z);
     elseif k == "space" then
         rotateBox = not rotateBox;
     end
@@ -185,14 +185,18 @@ end);
 w:addEventCallback("onKeyUp", function(self, data)
     local k = data.key:lower();
     if k == "w" or k == "s" then
-        camMovement = vec3(camMovement.x, camMovement.y, 0);
+        camMovement = luajogo.vec3(camMovement.x, camMovement.y, 0);
     elseif k == "a" or k == "d" then
-        camMovement = vec3(0, camMovement.y, camMovement.z);
+        camMovement = luajogo.vec3(0, camMovement.y, camMovement.z);
     elseif k == "q" or k == "e" then
-        camRotation = vec3(camRotation.x, 0, camRotation.z);
+        camRotation = luajogo.vec3(camRotation.x, 0, camRotation.z);
     elseif k == "z" or k == "x" then
-        camRotation = vec3(0, camRotation.y, camRotation.z);
+        camRotation = luajogo.vec3(0, camRotation.y, camRotation.z);
     end
+end);
+
+w:addEventCallback("onMouseMove", function(self, data)
+    print("Mouse moved: " .. tostring(luajogo.vec2(data.x, data.y)) .. ", delta: " .. tostring(luajogo.vec2(data.xrel, data.yrel)));
 end);
 
 w:open();
@@ -200,7 +204,7 @@ w:open();
 while not w:shouldClose() do
     w:pollEvents();
 
-    if camMovement ~= vec3() or camRotation ~= vec3() then
+    if camMovement ~= luajogo.vec3() or camRotation ~= luajogo.vec3() then
         camMat:translateInPlace(camMovement * w:deltaTime());
         camMat:rotateEuler(camRotation * w:deltaTime());
         updateWorldToVPMat();

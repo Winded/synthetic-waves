@@ -151,10 +151,6 @@ static const luaL_reg lua_texture_meta[] = {
 
 void lua_texture_load_lib(lua_State *L)
 {
-    lua_newtable(L);
-    luaL_openlib(L, 0, lua_texture_lib, 0);
-    lua_setglobal(L, "texture");
-
     luaL_newmetatable(L, "texture");
     luaL_openlib(L, 0, lua_texture_meta, 0);
     lua_pushliteral(L, "__index");
@@ -164,4 +160,8 @@ void lua_texture_load_lib(lua_State *L)
     lua_pushvalue(L, -2);
     lua_rawset(L, -3);
     lua_pop(L, 1);
+
+    lua_newtable(L);
+    luaL_openlib(L, 0, lua_texture_lib, 0);
+    lua_setfield(L, -2, "texture");
 }

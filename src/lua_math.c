@@ -280,14 +280,15 @@ static const luaL_reg lua_math_vec##n##_meta[] = {\
 \
 void lua_math_vec##n##_load(lua_State *L)\
 {\
-    lua_pushcfunction(L, lua_math_vec##n##_create);\
-    lua_setglobal(L, "vec"#n);\
     luaL_newmetatable(L, "vec"#n);\
     luaL_openlib(L, 0, lua_math_vec##n##_meta, 0);\
     lua_pushliteral(L, "__metatable");\
     lua_pushvalue(L, -2);\
     lua_rawset(L, -3);\
     lua_pop(L, 1);\
+    \
+    lua_pushcfunction(L, lua_math_vec##n##_create);\
+    lua_setfield(L, -2, "vec"#n);\
 }
 
 LUA_MATH_DEFINE_VEC(2)
@@ -670,8 +671,6 @@ static const luaL_reg lua_math_mat4x4_meta[] = {
 
 void lua_math_mat4x4_load(lua_State *L)
 {
-    lua_pushcfunction(L, lua_math_mat4x4_create);
-    lua_setglobal(L, "mat4x4");
     luaL_newmetatable(L, "mat4x4");
     luaL_openlib(L, 0, lua_math_mat4x4_meta, 0);
     lua_pushliteral(L, "__index");
@@ -681,6 +680,9 @@ void lua_math_mat4x4_load(lua_State *L)
     lua_pushvalue(L, -2);
     lua_rawset(L, -3);
     lua_pop(L, 1);
+
+    lua_pushcfunction(L, lua_math_mat4x4_create);
+    lua_setfield(L, -2, "mat4x4");
 }
 
 void lua_math_load(lua_State *L)
@@ -695,9 +697,9 @@ void lua_math_load(lua_State *L)
 
     // math globals
     lua_pushnumber(L, DEG2RAD);
-    lua_setglobal(L, "DEG2RAD");
+    lua_setfield(L, -2, "DEG2RAD");
     lua_pushnumber(L, RAD2DEG);
-    lua_setglobal(L, "RAD2DEG");
+    lua_setfield(L, -2, "RAD2DEG");
 }
 
 void lua_math_test(lua_State *L)

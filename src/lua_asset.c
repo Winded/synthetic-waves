@@ -355,10 +355,6 @@ static const luaL_reg lua_asset_reader_meta[] = {
 
 void lua_asset_lib_load(lua_State *L)
 {
-    lua_newtable(L);
-    luaL_openlib(L, 0, lua_asset_lib, 0);
-    lua_setglobal(L, "assets");
-
     luaL_newmetatable(L, "asset");
     luaL_openlib(L, 0, lua_asset_meta, 0);
     lua_pushliteral(L, "__index");
@@ -378,6 +374,10 @@ void lua_asset_lib_load(lua_State *L)
     lua_pushvalue(L, -2);
     lua_rawset(L, -3);
     lua_pop(L, 1);
+
+    lua_newtable(L);
+    luaL_openlib(L, 0, lua_asset_lib, 0);
+    lua_setfield(L, -2, "assets");
 }
 
 void lua_asset_lib_test(lua_State *L)
