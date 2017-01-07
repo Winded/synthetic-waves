@@ -34,6 +34,7 @@ int lua_graphics_create(lua_State *L)
     lua_graphics_context *ctx = lua_graphics_new(L);
     graphics_context_init(ctx);
     graphics_set_feature(ctx, graphics_feature_depth_test, 1);
+    graphics_set_feature(ctx, graphics_feature_blend, 1);
     return 1;
 }
 
@@ -66,7 +67,7 @@ int lua_graphics_create_texture(lua_State *L)
 
     void *data = malloc(texture->data_size);
     memcpy(data, texture->data, texture->data_size);
-    graphics_texture *t = graphics_texture_create(ctx, data, texture->width, texture->height);
+    graphics_texture *t = graphics_texture_create(ctx, data, texture->width, texture->height, texture->num_channels);
     lua_graphics_texture_push(L, t);
 
     return 1;

@@ -510,7 +510,7 @@ int lua_math_mat4x4_scale(lua_State *L)
         return 0;
     }
 
-    const vec3 *v = lua_math_mat4x4_check(L, 2);
+    const vec3 *v = lua_math_vec3_check(L, 2);
     mat4x4_scale_aniso(m, m, (*v)[0], (*v)[1], (*v)[2]);
     return 0;
 }

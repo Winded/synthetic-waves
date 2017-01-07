@@ -21,7 +21,8 @@
 #include <stdlib.h>
 
 typedef enum {
-    graphics_feature_depth_test
+    graphics_feature_depth_test,
+    graphics_feature_blend,
 } graphics_feature;
 
 typedef enum graphics_shader_type {
@@ -63,6 +64,7 @@ typedef struct graphics_texture {
         void *data;
         int width;
         int height;
+        int num_channels;
 } graphics_texture;
 
 typedef struct graphics_vertex_array_attribute {
@@ -124,7 +126,7 @@ int graphics_shader_param_get(graphics_context *context, const char *name, float
 void graphics_shader_param_set(graphics_context *context, const char *name, float *value, int size);
 void graphics_shader_param_delete(graphics_context *context, const char *name);
 
-graphics_texture *graphics_texture_create(graphics_context *context, const void *data, int width, int height);
+graphics_texture *graphics_texture_create(graphics_context *context, const void *data, int width, int height, int num_channels);
 void graphics_texture_destroy(graphics_texture *texture);
 
 graphics_vertex_array *graphics_vertex_array_create(graphics_context *context, float *vertex_buffer, int vertex_buffer_size, int *element_buffer, int element_buffer_size);

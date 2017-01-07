@@ -106,6 +106,65 @@ int lua_font_get_char_info(lua_State *L)
     return 1;
 }
 
+int lua_font_make_vertex_array(lua_State *L)
+{
+    const lua_font *font = lua_font_check(L, 1);
+    const char *text = luaL_checkstring(L, 2);
+
+    lua_rawgeti(L, LUA_REGISTRYINDEX, font->texture_ref);
+    const lua_texture *texture = lua_texture_check(L, -1);
+
+    int xpos = 0;
+    int ypos = 0;
+    stbtt_aligned_quad quad;
+#ifdef USE_OPENGL
+    int fillrule = 1;
+#else
+    int fillrule = 0;
+#endif
+    int vidx = 1;
+    int eidx = 1;
+    int evidx = 0;
+
+    lua_newtable(L); // Returned table
+    lua_newtable(L); // vertex buffer
+    lua_newtable(L); // element buffer
+
+    for(int i = 0; i < strlen(text); i++) {
+        char c = *(text + i);
+        stbtt_GetBakedQuad(font->baked_chars, texture->width, texture->height, c - 32, &xpos, &ypos, &quad, 1);
+
+        float vbuf[] = {
+            quad.x0, quad.y0, 0, quad.s0, quad.t0,
+            quad.x1, quad.y0, 0, quad.s1, quad.t0,
+            quad.x1, quad.y1, 0, quad.s1, quad.t1,
+            quad.x0, quad.y1, 0, quad.s0, quad.t1,
+        };
+        int ebuf[] = {
+            evidx, evidx + 1, evidx + 3,
+            evidx + 1, evidx + 2, evidx + 3,
+        };
+
+        for(int i2 = 0; i2 < 5 * 4; i2++) {
+            lua_pushinteger(L, vidx);
+            lua_pushnumber(L, vbuf[i2]);
+            lua_rawset(L, -4);
+            vidx++;
+        }
+        for(int i2 = 0; i2 < 6; i2++) {
+            lua_pushinteger(L, eidx);
+            lua_pushnumber(L, ebuf[i2]);
+            lua_rawset(L, -3);
+            eidx++;
+        }
+        evidx += 4;
+    }
+
+    lua_setfield(L, -3, "ebuf");
+    lua_setfield(L, -2, "vbuf");
+    return 1;
+}
+
 int lua_font_gc(lua_State *L)
 {
     lua_font *font = lua_font_check(L, 1);
@@ -118,6 +177,7 @@ int lua_font_gc(lua_State *L)
 static const luaL_reg lua_font_meta[] = {
     {"texture", lua_font_texture},
     {"getCharInfo", lua_font_get_char_info},
+    {"makeVertexArray", lua_font_make_vertex_array},
     {"__gc", lua_font_gc},
     {0, 0}
 };

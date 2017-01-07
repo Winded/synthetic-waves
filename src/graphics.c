@@ -27,6 +27,16 @@ void graphics_set_feature(graphics_context *ctx, graphics_feature feature, int e
             glDisable(GL_DEPTH_TEST);
 #endif
         break;
+    case graphics_feature_blend:
+#ifdef USE_OPENGL
+        if(enabled) {
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        }
+        else
+            glDisable(GL_BLEND);
+#endif
+        break;
     default:
         break;
     }
@@ -232,12 +242,13 @@ void graphics_shader_param_delete(graphics_context *context, const char *name)
     }
 }
 
-graphics_texture *graphics_texture_create(graphics_context *context, const void *data, int width, int height)
+graphics_texture *graphics_texture_create(graphics_context *context, const void *data, int width, int height, int num_channels)
 {
     graphics_texture *texture = (graphics_texture*)util_reserve_item_exp(context->textures, ARRSIZE_RESERVE, ARRSIZE_TEXTURE, sizeof(graphics_texture));
     texture->data = data;
     texture->width = width;
     texture->height = height;
+    texture->num_channels = num_channels;
 
 #ifdef USE_OPENGL
     GLuint glTex;
@@ -251,7 +262,22 @@ graphics_texture *graphics_texture_create(graphics_context *context, const void 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (GLint)GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (GLint)GL_NEAREST);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture->width, texture->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture->data);
+    GLenum format = GL_NONE;
+    switch(num_channels) {
+    case 1:
+        format = GL_RED;
+        break;
+    case 3:
+        format = GL_RGB;
+        break;
+    case 4:
+        format = GL_RGBA;
+        break;
+    default:
+        fprintf(stderr, "Invalid amount of texture channels: %d\n", num_channels);
+    }
+
+    glTexImage2D(GL_TEXTURE_2D, 0, format, texture->width, texture->height, 0, format, GL_UNSIGNED_BYTE, texture->data);
 
     GLenum err = glGetError();
     if(err != GL_FALSE) {
@@ -508,6 +534,7 @@ void graphics_draw(graphics_context *context)
 
         // Apply texture
         glBindTexture(GL_TEXTURE_2D, object->texture->handle);
+        glActiveTexture(GL_TEXTURE0);
         err = glGetError();
         if(err != GL_FALSE) {
             fprintf(stderr, "OpenGL texture bind error: %i\n", err);

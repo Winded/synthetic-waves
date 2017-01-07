@@ -32,6 +32,22 @@ void main()
     outColor = texture2D(Texture1, UV) * BaseColor;
 }
 ]];
+local FRAGMENT_FONT_CODE = [[
+#version 330
+
+in vec2 UV;
+
+out vec4 outColor;
+
+uniform sampler2D Texture1;
+uniform vec4 BaseColor;
+
+void main()
+{
+    vec4 c = texture2D(Texture1, UV) * BaseColor;
+    outColor = vec4(c.r, c.r, c.r, c.r);
+}
+]];
 
 local BOX = {
     vbuf = {
@@ -88,14 +104,6 @@ local tex = luajogo.texture.load(texAsset);
 
 local fontAsset = luajogo.assets.load("/arial.ttf");
 local font = luajogo.font.load(fontAsset);
-print(font:texture());
-
-local txt = "Hello world!";
-for i=1, txt:len() do
-    local c = txt:sub(i, i);
-    local charInfo = font:getCharInfo(c);
-    print(charInfo.xadvance);
-end
 
 local w = luajogo.window.create(WIDTH, HEIGHT, "luajogo example");
 if not w:isValid() then
@@ -107,9 +115,17 @@ w:setGraphicsContext(g);
 
 local vertexShader = g:createShader(VERTEX_CODE, luajogo.VERTEX_SHADER);
 local fragmentShader = g:createShader(FRAGMENT_CODE, luajogo.FRAGMENT_SHADER);
+local fragmentFontShader = g:createShader(FRAGMENT_FONT_CODE, luajogo.FRAGMENT_SHADER);
 local program = g:createShaderProgram(vertexShader, fragmentShader);
+local fontProgram = g:createShaderProgram(vertexShader, fragmentFontShader);
 
 local texture = g:createTexture(tex);
+local fontTexture = g:createTexture(font:texture());
+
+local fontMesh = font:makeVertexArray("Hello World!");
+local fontVA = g:createVertexArray(fontMesh.vbuf, fontMesh.ebuf);
+fontVA:setAttribute(0, 3);
+fontVA:setAttribute(1, 2);
 
 local box = g:createVertexArray(BOX.vbuf, BOX.ebuf);
 box:setAttribute(0, 3);
@@ -153,11 +169,21 @@ gObj:setTexture(texture);
 --gObj:setVertexArray(quad);
 gObj:setVertexArray(box);
 
+local textObj = g:createObject();
+textObj:setShaderProgram(fontProgram);
+textObj:setTexture(fontTexture);
+textObj:setVertexArray(fontVA);
+
 w:setClearColor(luajogo.color(150, 150, 150, 255));
 g:refreshDrawOrder();
 
 local lToWMat = luajogo.mat4x4();
 gObj:setShaderParam("LocalToWorldMatrix", lToWMat);
+
+local textLToW = luajogo.mat4x4();
+textLToW:rotateEuler(luajogo.vec3(180, 0, 0));
+textLToW:scale(luajogo.vec3(1, 1, 1) * 0.01);
+textObj:setShaderParam("LocalToWorldMatrix", textLToW);
 
 local rotateBox = false;
 local rotateDir = luajogo.vec3(1, 1, 1);
