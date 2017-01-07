@@ -83,9 +83,19 @@ luajogo.assets.configure({
     }    
 });
 
-local tex = luajogo.texture.load("/tileset.png");
-print(tex);
-print(tex:getPixel(10, 10));
+local texAsset = luajogo.assets.load("/tileset.png");
+local tex = luajogo.texture.load(texAsset);
+
+local fontAsset = luajogo.assets.load("/arial.ttf");
+local font = luajogo.font.load(fontAsset);
+print(font:texture());
+
+local txt = "Hello world!";
+for i=1, txt:len() do
+    local c = txt:sub(i, i);
+    local charInfo = font:getCharInfo(c);
+    print(charInfo.xadvance);
+end
 
 local w = luajogo.window.create(WIDTH, HEIGHT, "luajogo example");
 if not w:isValid() then

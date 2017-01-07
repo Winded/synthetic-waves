@@ -8,6 +8,7 @@
 #include <lua_math.h>
 #include <lua_asset.h>
 #include <lua_texture.h>
+#include <lua_font.h>
 #include <lua_window.h>
 #include <lua_graphics.h>
 #include <lua_input.h>
@@ -38,6 +39,7 @@ void openlibs(lua_State *L)
 
     lua_asset_lib_load(L);
     lua_texture_load_lib(L);
+    lua_font_load_lib(L);
 
     lua_window_load(L);
     lua_graphics_load(L);

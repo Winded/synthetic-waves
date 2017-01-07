@@ -7,17 +7,7 @@
 
 int lua_texture_load(lua_State *L)
 {
-    luaL_checkstring(L, 1);
-    lua_pushcfunction(L, lua_asset_load);
-    lua_pushvalue(L, 1);
-    lua_pushboolean(L, 0);
-    lua_call(L, 2, 1);
-
-    if(lua_isnil(L, -1)) {
-        return 1;
-    }
-
-    const lua_asset *asset = lua_asset_check(L, -1);
+    const lua_asset *asset = lua_asset_check(L, 1);
 
     int width, height, num_channels;
     char *data = stbi_load_from_memory(asset->buffer, asset->buffer_size, &width, &height, &num_channels, 4);
@@ -27,6 +17,7 @@ int lua_texture_load(lua_State *L)
         return 1;
     }
 
+    lua_pushvalue(L, 1);
     int asset_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     lua_texture *texture = lua_texture_new(L);
     texture->asset_ref = asset_ref;
