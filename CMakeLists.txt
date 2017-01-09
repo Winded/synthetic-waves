@@ -20,6 +20,7 @@ target_link_libraries(${PROJECT_NAME}
     libglew_shared
     SDL2
     SDL2main
+    shlwapi
 )
 
 include_directories(include

@@ -4,6 +4,7 @@
 #include <lauxlib.h>
 #include <linmath.h>
 #include <lua_type.h>
+#include <lua_include.h>
 #include <lua_color.h>
 #include <lua_math.h>
 #include <lua_asset.h>
@@ -19,19 +20,29 @@
 void openlibs(lua_State *L)
 {
     // Standard lua libraries
-    luaopen_base(L);
-    luaopen_table(L);
-    luaopen_io(L);
-    luaopen_os(L);
-    luaopen_string(L);
-    luaopen_math(L);
-    luaopen_debug(L);
-    //luaopen_package(L);
+    lua_pushcfunction(L, luaopen_base);
+    lua_call(L, 0, 0);
+    lua_pushcfunction(L, luaopen_table);
+    lua_call(L, 0, 0);
+    lua_pushcfunction(L, luaopen_io);
+    lua_call(L, 0, 0);
+    lua_pushcfunction(L, luaopen_os);
+    lua_call(L, 0, 0);
+    lua_pushcfunction(L, luaopen_string);
+    lua_call(L, 0, 0);
+    lua_pushcfunction(L, luaopen_math);
+    lua_call(L, 0, 0);
+    lua_pushcfunction(L, luaopen_debug);
+    lua_call(L, 0, 0);
+    //lua_pushcfunction(L, luaopen_package);
+    //lua_call(L, 0, 0);
 
     // luajogo libraries. All native libs are contained in the luajogo table
     lua_newtable(L);
 
     lua_type_load(L);
+    lua_include_load(L);
+
     lua_color_load(L);
     lua_math_load(L);
 
@@ -58,18 +69,14 @@ int main(int argc, char *argv[])
     lua_math_test(L);
     lua_asset_lib_test(L);
 
-    int status = luaL_loadfile(L, "../main.lua");
-    if(status) {
-        fprintf(stderr, "Couldn't load file: %s", lua_tostring(L, -1));
-        return 0;
-    }
-
     if(SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("FAIL init");
         return 0;
     }
 
-    int result = lua_pcall(L, 0, 0, 0);
+    lua_getglobal(L, "include");
+    lua_pushstring(L, "../main.lua");
+    int result = lua_pcall(L, 1, 0, 0);
     if(result) {
         fprintf(stderr, "LUA error on load: %s\n", lua_tostring(L, -1));
         return 0;

@@ -1,5 +1,7 @@
 -- Test script
 
+include("lualibs/lj2d/main.lua");
+
 local VERTEX_CODE = [[
 #version 330
 
