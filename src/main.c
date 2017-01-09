@@ -69,9 +69,21 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    int result = lua_pcall(L, 0, LUA_MULTRET, 0);
+    int result = lua_pcall(L, 0, 0, 0);
     if(result) {
-        fprintf(stderr, "Failed to run script: %s\n", lua_tostring(L, -1));
+        fprintf(stderr, "LUA error on load: %s\n", lua_tostring(L, -1));
+        return 0;
+    }
+
+    lua_getglobal(L, "main");
+    if(!lua_isfunction(L, -1)) {
+        fprintf(stderr, "Error: No main() function found in global namespace. Aborting...\n");
+        return 0;
+    }
+
+    result = lua_pcall(L, 0, 0, 0);
+    if(result) {
+        fprintf(stderr, "LUA error: %s\n", lua_tostring(L, -1));
         return 0;
     }
 

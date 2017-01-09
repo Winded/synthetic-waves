@@ -93,172 +93,157 @@ local WIDTH = 640;
 local HEIGHT = 480;
 local FOV = 60;
 
-luajogo.assets.configure({
-    assetSources = {
-        {type = "folder", path = "../assets"}
-    }    
-});
+local rotateBox = false;
+local rotateDir = luajogo.vec3(1, 1, 1);
 
-local texAsset = luajogo.assets.load("/tileset.png");
-local tex = luajogo.texture.load(texAsset);
-
-local fontAsset = luajogo.assets.load("/arial.ttf");
-local font = luajogo.font.load(fontAsset);
-
-local w = luajogo.window.create(WIDTH, HEIGHT, "luajogo example");
-if not w:isValid() then
-    return;
-end
-
-local g = luajogo.graphicsContext();
-w:setGraphicsContext(g);
-
-local vertexShader = g:createShader(VERTEX_CODE, luajogo.VERTEX_SHADER);
-local fragmentShader = g:createShader(FRAGMENT_CODE, luajogo.FRAGMENT_SHADER);
-local fragmentFontShader = g:createShader(FRAGMENT_FONT_CODE, luajogo.FRAGMENT_SHADER);
-local program = g:createShaderProgram(vertexShader, fragmentShader);
-local fontProgram = g:createShaderProgram(vertexShader, fragmentFontShader);
-
-local texture = g:createTexture(tex);
-local fontTexture = g:createTexture(font:texture());
-
-local fontMesh = font:makeVertexArray("Hello World!");
-local fontVA = g:createVertexArray(fontMesh.vbuf, fontMesh.ebuf);
-fontVA:setAttribute(0, 3);
-fontVA:setAttribute(1, 2);
-
-local box = g:createVertexArray(BOX.vbuf, BOX.ebuf);
-box:setAttribute(0, 3);
-box:setAttribute(1, 2);
-
-local quad = g:createVertexArray(QUAD.vbuf, QUAD.ebuf);
-quad:setAttribute(0, 3);
-quad:setAttribute(1, 2);
-
-local camMat = luajogo.mat4x4();
-camMat:translateInPlace(luajogo.vec3(0, 0, 2));
-local camMovement = luajogo.vec3();
-local camRotation = luajogo.vec3();
-local function updateWorldToVPMat()
+function makeWorldToVPMat(camPos, camRot, screenWidth, screenHeight, fov)
     local projMat = luajogo.mat4x4();
-    local orthoScale = 5;
-    local aspectRatio = WIDTH / HEIGHT;
-    local orthoWidth = orthoScale * aspectRatio;
-    local orthoHeight = orthoScale;
-    projMat:perspective(FOV, aspectRatio, 0.5, 500);
-    local lToW = camMat;
+    local aspectRatio = screenWidth / screenHeight;
+    projMat:perspective(fov, aspectRatio, 0.5, 500);
+
+    local lToW = luajogo.mat4x4();
+    lToW:translate(camPos);
+    lToW:rotateEuler(camRot);
     local forward = lToW * luajogo.vec4(0, 0, -1, 1);
     forward = luajogo.vec3(forward.x, forward.y, forward.z);
     local up = lToW * luajogo.vec4(0, 1, 0, 1);
     up = luajogo.vec3(up.x, up.y, up.z);
-    local camPos = lToW * luajogo.vec4(0, 0, 0, 1);
-    camPos = luajogo.vec3(camPos.x, camPos.y, camPos.z);
+    local eye = lToW * luajogo.vec4(0, 0, 0, 1);
+    eye = luajogo.vec3(eye.x, eye.y, eye.z);
+
     local viewMat = luajogo.mat4x4();
-    viewMat:lookAt(camPos, forward, up - camPos);
+    viewMat:lookAt(eye, forward, up - eye);
     local wToVP = projMat * viewMat;
-    g:setShaderParam("WorldToViewportMatrix", wToVP);
+
+    return wToVP;
 end
 
-updateWorldToVPMat();
+function setup()
 
-g:setShaderParam("BaseColor", luajogo.color("white"));
+    local scene = {};
 
-local gObj = g:createObject();
-gObj:setShaderProgram(program);
-gObj:setTexture(texture);
---gObj:setVertexArray(quad);
-gObj:setVertexArray(box);
+    local texAsset = luajogo.assets.load("/tileset.png");
+    local tex = luajogo.texture.load(texAsset);
 
-local textObj = g:createObject();
-textObj:setShaderProgram(fontProgram);
-textObj:setTexture(fontTexture);
-textObj:setVertexArray(fontVA);
+    local fontAsset = luajogo.assets.load("/arial.ttf");
+    local font = luajogo.font.load(fontAsset);
 
-w:setClearColor(luajogo.color(150, 150, 150, 255));
-g:refreshDrawOrder();
-
-local lToWMat = luajogo.mat4x4();
-gObj:setShaderParam("LocalToWorldMatrix", lToWMat);
-
-local textLToW = luajogo.mat4x4();
-textLToW:rotateEuler(luajogo.vec3(180, 0, 0));
-textLToW:scale(luajogo.vec3(1, 1, 1) * 0.01);
-textObj:setShaderParam("LocalToWorldMatrix", textLToW);
-
-local rotateBox = false;
-local rotateDir = luajogo.vec3(1, 1, 1);
-
-w:addEventCallback("onWindowResize", function(self, data)
-    WIDTH = data.width;
-    HEIGHT = data.height;
-    updateWorldToVPMat();
-end);
-
-w:addEventCallback("onKeyDown", function(self, data)
-    local k = data.key:lower();
-    if k == "w" then
-        camMovement = luajogo.vec3(camMovement.x, camMovement.y, -1);
-    elseif k == "s" then
-        camMovement = luajogo.vec3(camMovement.x, camMovement.y, 1);
-    elseif k == "a" then
-        camMovement = luajogo.vec3(-1, camMovement.y, camMovement.z);
-    elseif k == "d" then
-        camMovement = luajogo.vec3(1, camMovement.y, camMovement.z);
-    elseif k == "r" then
-        local pos = camMat * luajogo.vec4(0, 0, 0, 1);
-        camMat = luajogo.mat4x4();
-        camMat:translateInPlace(luajogo.vec3(pos.x, pos.y, pos.z));
-    elseif k == "space" then
-        rotateBox = not rotateBox;
-    end
-    updateWorldToVPMat();
-end);
-
-w:addEventCallback("onKeyUp", function(self, data)
-    local k = data.key:lower();
-    if k == "w" or k == "s" then
-        camMovement = luajogo.vec3(camMovement.x, camMovement.y, 0);
-    elseif k == "a" or k == "d" then
-        camMovement = luajogo.vec3(0, camMovement.y, camMovement.z);
-    end
-end);
-
-w:addEventCallback("onMouseDown", function(self, data)
-    if data.button == 1 then
-        luajogo.input.setRelativeMouse(true);
-    end
-end);
-
-w:addEventCallback("onMouseUp", function(self, data)
-    if data.button == 1 then
-        luajogo.input.setRelativeMouse(false);
-        camRotation = luajogo.vec3();
-    end
-end);
-
-w:addEventCallback("onMouseMove", function(self, data)
-    if luajogo.input.getRelativeMouse() then
-        local delta = luajogo.vec2(data.xrel, data.yrel) * 0.5;
-        camMat:rotateEuler(luajogo.vec3(-delta.y, delta.x, 0));
-    end
-end);
-
-w:open();
-
-while not w:shouldClose() do
-    w:pollEvents();
-
-    if camMovement ~= luajogo.vec3() or camRotation ~= luajogo.vec3() then
-        camMat:translateInPlace(camMovement * w:deltaTime());
-        camMat:rotateEuler(camRotation * w:deltaTime());
-        updateWorldToVPMat();
+    local w = luajogo.window.create(WIDTH, HEIGHT, "luajogo example");
+    if not w:isValid() then
+        error("Window is invalid");
     end
 
-    if rotateBox then
-        local r = 45 * w:deltaTime();
-        lToWMat:rotateEuler(rotateDir);
-        gObj:setShaderParam("LocalToWorldMatrix", lToWMat);
+    local g = luajogo.graphicsContext();
+    w:setGraphicsContext(g);
+
+    local vertexShader = g:createShader(VERTEX_CODE, luajogo.VERTEX_SHADER);
+    local fragmentShader = g:createShader(FRAGMENT_CODE, luajogo.FRAGMENT_SHADER);
+    local fragmentFontShader = g:createShader(FRAGMENT_FONT_CODE, luajogo.FRAGMENT_SHADER);
+    local program = g:createShaderProgram(vertexShader, fragmentShader);
+    local fontProgram = g:createShaderProgram(vertexShader, fragmentFontShader);
+
+    local texture = g:createTexture(tex);
+    local fontTexture = g:createTexture(font:texture());
+
+    local fontMesh = font:makeVertexArray("Hello World!");
+    local fontVA = g:createVertexArray(fontMesh.vbuf, fontMesh.ebuf);
+    fontVA:setAttribute(0, 3);
+    fontVA:setAttribute(1, 2);
+
+    local box = g:createVertexArray(BOX.vbuf, BOX.ebuf);
+    box:setAttribute(0, 3);
+    box:setAttribute(1, 2);
+
+    local quad = g:createVertexArray(QUAD.vbuf, QUAD.ebuf);
+    quad:setAttribute(0, 3);
+    quad:setAttribute(1, 2);
+
+    g:setShaderParam("WorldToViewportMatrix", makeWorldToVPMat(luajogo.vec3(0, 0, 2), luajogo.vec3(0, 0, 0), WIDTH, HEIGHT, FOV));
+    g:setShaderParam("BaseColor", luajogo.color("white"));
+
+    local gObj = g:createObject();
+    gObj:setShaderProgram(program);
+    gObj:setTexture(texture);
+    gObj:setVertexArray(box);
+
+    local textObj = g:createObject();
+    textObj:setShaderProgram(fontProgram);
+    textObj:setTexture(fontTexture);
+    textObj:setVertexArray(fontVA);
+
+    w:setClearColor(luajogo.color(150, 150, 150, 255));
+    g:refreshDrawOrder();
+
+    local lToWMat = luajogo.mat4x4();
+    gObj:setShaderParam("LocalToWorldMatrix", lToWMat);
+
+    local textLToW = luajogo.mat4x4();
+    textLToW:rotateEuler(luajogo.vec3(180, 0, 0));
+    textLToW:scale(luajogo.vec3(1, 1, 1) * 0.01);
+    textObj:setShaderParam("LocalToWorldMatrix", textLToW);
+
+    w:setClearColor(luajogo.color(150, 150, 150, 255));
+    g:refreshDrawOrder();
+
+    scene.graphics = g;
+    scene.gObj = gObj;
+    scene.textObj = textObj;
+
+    return {
+        window = w,
+        graphics = g,
+        gObj = gObj,
+        textObj = textObj,
+    };
+end
+
+function onWindowResize(self, data)
+
+end
+
+function onKeyDown(self, data)
+
+end
+
+function onKeyUp(self, data)
+
+end
+
+function onMouseDown(self, data)
+
+end
+
+function onMouseUp(self, data)
+
+end
+
+function onMouseMove(self, data)
+
+end
+
+function main()
+
+    luajogo.assets.configure({
+        assetSources = {
+            {type = "folder", path = "../assets"}
+        }    
+    });
+
+    local scene = setup();
+
+    scene.window:addEventCallback("onWindowResize", onWindowResize);
+    scene.window:addEventCallback("onKeyDown", onKeyDown);
+    scene.window:addEventCallback("onKeyUp", onKeyUp);
+    scene.window:addEventCallback("onMouseDown", onMouseDown);
+    scene.window:addEventCallback("onMouseUp", onMouseUp);
+    scene.window:addEventCallback("onMouseMove", onMouseMove);
+
+    scene.window:open();
+
+    while not scene.window:shouldClose() do
+        scene.window:pollEvents();
+
+        scene.window:draw();
     end
 
-    w:draw();
 end
