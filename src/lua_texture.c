@@ -150,6 +150,9 @@ void lua_texture_load_lib(lua_State *L)
     lua_pushliteral(L, "__metatable");
     lua_pushvalue(L, -2);
     lua_rawset(L, -3);
+    lua_pushliteral(L, "__type");
+    lua_pushstring(L, "texture");
+    lua_rawset(L, -3);
     lua_pop(L, 1);
 
     lua_newtable(L);

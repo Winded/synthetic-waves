@@ -363,6 +363,9 @@ void lua_asset_lib_load(lua_State *L)
     lua_pushliteral(L, "__metatable");
     lua_pushvalue(L, -2);
     lua_rawset(L, -3);
+    lua_pushliteral(L, "__type");
+    lua_pushstring(L, "asset");
+    lua_rawset(L, -3);
     lua_pop(L, 1);
 
     luaL_newmetatable(L, "assetReader");
@@ -372,6 +375,9 @@ void lua_asset_lib_load(lua_State *L)
     lua_rawset(L, -3);
     lua_pushliteral(L, "__metatable");
     lua_pushvalue(L, -2);
+    lua_rawset(L, -3);
+    lua_pushliteral(L, "__type");
+    lua_pushstring(L, "assetReader");
     lua_rawset(L, -3);
     lua_pop(L, 1);
 

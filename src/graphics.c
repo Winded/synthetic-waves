@@ -492,6 +492,13 @@ void graphics_object_destroy(graphics_object *object)
     memset(object, 0, sizeof(graphics_object));
 }
 
+static int graphics_qsort_draw_order(const void *a, const void *b)
+{
+    graphics_object *g1 = *((graphics_object**)a);
+    graphics_object *g2 = *((graphics_object**)b);
+    return 0;
+}
+
 void graphics_refresh_draw_order(graphics_context *context)
 {
     memset(context->object_draw_array, 0, sizeof(graphics_object*) * ARRSIZE_RESERVE * ARRSIZE_OBJECT);
@@ -507,6 +514,8 @@ void graphics_refresh_draw_order(graphics_context *context)
             }
         }
     }
+
+    qsort(context->object_draw_array, idx, sizeof(graphics_object*), graphics_qsort_draw_order);
 }
 
 void graphics_draw(graphics_context *context)

@@ -363,8 +363,18 @@ int lua_graphics_texture_size(lua_State *L)
     return 2;
 }
 
+int lua_graphics_texture_destroy(lua_State *L)
+{
+    graphics_texture *t = lua_graphics_texture_check(L, 1);
+    if(t->is_valid)
+        graphics_texture_destroy(t);
+    return 0;
+}
+
 static const luaL_reg lua_graphics_texture_meta[] = {
+    {"isValid", lua_util_udata_ptr_is_valid},
     {"size", lua_graphics_texture_size},
+    {"destroy", lua_graphics_texture_destroy},
     {0, 0}
 };
 
@@ -551,6 +561,13 @@ int lua_graphics_object_delete_shader_param(lua_State *L)
     return 0;
 }
 
+int lua_graphics_object_destroy(lua_State *L)
+{
+    graphics_object *obj = lua_graphics_object_check(L, 1);
+    graphics_object_destroy(obj);
+    return 0;
+}
+
 static const luaL_reg lua_graphics_object_meta[] = {
     {"isValid", lua_util_udata_ptr_is_valid},
     {"shaderProgram", lua_graphics_object_shader_program},
@@ -561,6 +578,7 @@ static const luaL_reg lua_graphics_object_meta[] = {
     {"setVertexArray", lua_graphics_object_set_vertex_array},
     {"setShaderParam", lua_graphics_object_set_shader_param},
     {"deleteShaderParam", lua_graphics_object_delete_shader_param},
+    {"destroy", lua_graphics_object_destroy},
     {0, 0}
 };
 
@@ -586,6 +604,8 @@ void lua_graphics_load(lua_State *L)
     lua_graphics_vertex_array_load(L);
     lua_graphics_object_load(L);
 
+    lua_newtable(L);
     lua_pushcfunction(L, lua_graphics_create);
-    lua_setfield(L, -2, "graphicsContext");
+    lua_setfield(L, -2, "createContext");
+    lua_setfield(L, -2, "graphics");
 }

@@ -47,7 +47,8 @@ void window_init(window *w_handle, const char *title, int width, int height)
         return;
     }
 
-    SDL_GL_SetSwapInterval(1);
+    //SDL_GL_SetSwapInterval(1);
+    SDL_GL_SetSwapInterval(0);
 
     glewExperimental = GL_TRUE;
     glewInit();
@@ -111,6 +112,16 @@ void window_get_size(window *w_handle, int *width, int *height)
 void window_set_size(window *w_handle, int width, int height)
 {
     SDL_SetWindowSize(w_handle->sdl_window, width, height);
+}
+
+const char *window_get_title(window *w_handle)
+{
+    return SDL_GetWindowTitle(w_handle->sdl_window);
+}
+
+void window_set_title(window *w_handle, const char *title)
+{
+    SDL_SetWindowTitle(w_handle->sdl_window, title);
 }
 
 float window_get_delta_time(window *w_handle)

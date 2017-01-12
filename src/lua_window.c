@@ -226,6 +226,21 @@ int lua_window_set_size(lua_State *L)
     return 0;
 }
 
+int lua_window_title(lua_State *L)
+{
+    lua_window *w = lua_window_check(L, 1);
+    lua_pushstring(L, window_get_title(&(w->w_handle)));
+    return 1;
+}
+
+int lua_window_set_title(lua_State *L)
+{
+    lua_window *w = lua_window_check(L, 1);
+    const char *title = luaL_checkstring(L, 2);
+    window_set_title(&(w->w_handle), title);
+    return 0;
+}
+
 int lua_window_maximize(lua_State *L)
 {
     lua_window *w = lua_window_check(L, 1);
@@ -324,6 +339,8 @@ static const luaL_reg lua_window_meta[] = {
     {"setPosition", lua_window_set_position},
     {"size", lua_window_size},
     {"setSize", lua_window_set_size},
+    {"title", lua_window_title},
+    {"setTitle", lua_window_set_title},
     {"maximize", lua_window_maximize},
     {"minimize", lua_window_minimize},
     {"restore", lua_window_restore},

@@ -61,6 +61,9 @@ void window_set_position(window *w_handle, int x, int y);
 void window_get_size(window *w_handle, int *width, int *height);
 void window_set_size(window *w_handle, int width, int height);
 
+const char *window_get_title(window *w_handle);
+void window_set_title(window *w_handle, const char *title);
+
 float window_get_delta_time(window *w_handle);
 float window_get_time(window *w_handle);
 
