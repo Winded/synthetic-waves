@@ -48,8 +48,11 @@ print(tostring(m));
 m:rotateEuler(vec3(90, 0, 0));
 print("mat4x4 rotated by [90, 0, 0]");
 print(tostring(m));
-m:scale(2);
-print("mat4x4 scaled by 2");
+m = m * 2;
+print("mat4x4 multiplied by 2");
+print(tostring(m));
+m:scale(vec3(2, 2, 2));
+print("mat4x4 scaled by [2, 2, 2]");
 print(tostring(m));
 
 print("-----");

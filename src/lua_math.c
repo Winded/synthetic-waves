@@ -3,13 +3,6 @@
 
 #define LUA_MATH_DEFINE_VEC(n) \
 \
-vec##n *lua_math_vec##n##_to(lua_State *L, int index)\
-{\
-    vec##n *v = (vec##n*)lua_touserdata(L, index);\
-    if (v == NULL) luaL_typerror(L, index, "vec"#n);\
-    return v;\
-}\
-\
 vec##n *lua_math_vec##n##_check(lua_State *L, int index)\
 {\
     luaL_checktype(L, index, LUA_TUSERDATA);\
@@ -327,8 +320,8 @@ int lua_math_vec4_cross(lua_State *L)
 
 int lua_math_vec4_reflect(lua_State *L)
 {
-    const vec3 *v1 = lua_math_vec4_check(L, 1);
-    const vec3 *vn = lua_math_vec4_check(L, 2);
+    const vec4 *v1 = lua_math_vec4_check(L, 1);
+    const vec4 *vn = lua_math_vec4_check(L, 2);
     vec4 v;
     vec4_reflect(v, v1, vn);
     lua_math_vec4_push(L, v);
@@ -354,13 +347,6 @@ void lua_math_vec_ext_load(lua_State *L)
     lua_pushcfunction(L, lua_math_vec4_reflect);
     lua_rawset(L, -3);
     lua_pop(L, 1);
-}
-
-mat4x4 *lua_math_mat4x4_to(lua_State *L, int index)
-{
-    mat4x4 *m = (mat4x4*)lua_touserdata(L, index);
-    if(m == NULL) luaL_typerror(L, index, "mat4x4");
-    return m;
 }
 
 mat4x4 *lua_math_mat4x4_check(lua_State *L, int index)
@@ -503,13 +489,6 @@ int lua_math_mat4x4_rotate_euler(lua_State *L)
 int lua_math_mat4x4_scale(lua_State *L)
 {
     mat4x4 *m = lua_math_mat4x4_check(L, 1);
-
-    if(lua_isnumber(L, 2)) {
-        float value = luaL_checknumber(L, 2);
-        mat4x4_scale(m, m, value);
-        return 0;
-    }
-
     const vec3 *v = lua_math_vec3_check(L, 2);
     mat4x4_scale_aniso(m, m, (*v)[0], (*v)[1], (*v)[2]);
     return 0;
@@ -595,22 +574,41 @@ int lua_math_mat4x4_sub(lua_State *L)
 int lua_math_mat4x4_mul(lua_State *L)
 {
     const mat4x4 *m1 = lua_math_mat4x4_check(L, 1);
-    if(!lua_isuserdata(L, 2)) {
-        luaL_error(L, "Argument #2 is not vec3 or mat4x4\n");
+
+    if(lua_isnumber(L, 2)) {
+        float scalar = luaL_checknumber(L, 2);
+        mat4x4 m;
+        mat4x4_scale(m, m1, scalar);
+        lua_math_mat4x4_push(L, m);
+        return 1;
+    }
+    else if(!lua_isuserdata(L, 2)) {
+        luaL_error(L, "Argument #2 is not number, vec3, vec4 or mat4x4\n");
         return 0;
     }
 
     lua_getmetatable(L, 2);
+    luaL_getmetatable(L, "vec3");
     luaL_getmetatable(L, "vec4");
     luaL_getmetatable(L, "mat4x4");
-    if(lua_equal(L, -2, -3)) {
+    if(lua_equal(L, -3, -4)) {
+        const vec3 *v1 = lua_math_vec3_check(L, 2);
+        vec4 v2;
+        memcpy(v2, v1, sizeof(vec3));
+        v2[3] = 1.f;
+        vec4 v;
+        mat4x4_mul_vec4(v, m1, v2);
+        lua_math_vec4_push(L, v);
+        return 1;
+    }
+    else if(lua_equal(L, -2, -4)) {
         const vec4 *v1 = lua_math_vec4_check(L, 2);
         vec4 v;
         mat4x4_mul_vec4(v, m1, v1);
         lua_math_vec4_push(L, v);
         return 1;
     }
-    else if(lua_equal(L, -1, -3)) {
+    else if(lua_equal(L, -1, -4)) {
         const mat4x4 *m2 = lua_math_mat4x4_check(L, 2);
         mat4x4 m;
         mat4x4_mul(m, m1, m2);
