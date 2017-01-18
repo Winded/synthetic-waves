@@ -10,10 +10,8 @@ function lj2d.window._load()
         error("Window is invalid");
     end
 
-    w:setGraphicsContext(lj2d.graphics._context);
-    w:setClearColor(luajogo.color("black"));
-
     lj2d.window._window = w;
+    lj2d.window._clearColor = luajogo.color("black");
 end
 
 function lj2d.window._hookEvents()
@@ -34,8 +32,8 @@ function lj2d.window._pollEvents()
     lj2d.window._window:pollEvents()
 end
 
-function lj2d.window._draw()
-    lj2d.window._window:draw();
+function lj2d.window._swapBuffers()
+    lj2d.window._window:swapBuffers();
 end
 
 function lj2d.window.time()
@@ -59,14 +57,11 @@ function lj2d.window.setSize(width, height)
     end
 end
 
-function lj2d.window.setClearColor(color)
-    lj2d.window._window:setClearColor(color);
-end
-
 function lj2d.window.title()
     return lj2d.window._window:title();
 end
 
 function lj2d.window.setTitle(title)
+    assert(type(title) == "string", "Expected string");
     lj2d.window._window:setTitle(title);
 end

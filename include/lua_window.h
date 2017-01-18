@@ -17,7 +17,6 @@
 typedef struct lua_window
 {
     window w_handle;
-    int graphics_context_ref;
     int event_handlers[LUA_WINDOW_MAX_EVENT_HANDLERS];
 } lua_window;
 

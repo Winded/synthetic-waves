@@ -127,65 +127,12 @@ int lua_window_close(lua_State *L)
     return 0;
 }
 
-int lua_window_graphics_context(lua_State *L)
-{
-    lua_window *w = lua_window_check(L, 1);
-    if(w->graphics_context_ref) {
-        lua_rawgeti(L, LUA_REGISTRYINDEX, w->graphics_context_ref);
-        return 1;
-    }
-    else {
-        lua_pushnil(L);
-        return 1;
-    }
-}
-
-int lua_window_set_graphics_context(lua_State *L)
-{
-    lua_window *w = lua_window_check(L, 1);
-    const graphics_context *ctx = lua_graphics_check(L, 2);
-    window_set_graphics_context(&(w->w_handle), ctx);
-    if(w->graphics_context_ref) {
-        luaL_unref(L, LUA_REGISTRYINDEX, w->graphics_context_ref);
-    }
-    lua_pushvalue(L, 2);
-    w->graphics_context_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-    return 0;
-}
-
 int lua_window_delta_time(lua_State *L)
 {
     lua_window *w = lua_window_check(L, 1);
     float deltaTime = window_get_delta_time(&(w->w_handle));
     lua_pushnumber(L, deltaTime);
     return 1;
-}
-
-int lua_window_get_clear_color(lua_State *L)
-{
-    const lua_window *w = lua_window_check(L, 1);
-    float fc[4];
-    window_get_clear_color(&(w->graphics_context_ref), fc);
-    lua_color c;
-    c[0] = (int)(fc[0] * 255.f);
-    c[1] = (int)(fc[1] * 255.f);
-    c[2] = (int)(fc[2] * 255.f);
-    c[3] = (int)(fc[3] * 255.f);
-    lua_color_push(L, c);
-    return 1;
-}
-
-int lua_window_set_clear_color(lua_State *L)
-{
-    lua_window *w = lua_window_check(L, 1);
-    const lua_color *c = lua_color_check(L, 2);
-    float fc[4];
-    fc[0] = (*c)[0] / 255.f;
-    fc[1] = (*c)[1] / 255.f;
-    fc[2] = (*c)[2] / 255.f;
-    fc[3] = (*c)[3] / 255.f;
-    window_set_clear_color(&(w->w_handle), fc);
-    return 0;
 }
 
 int lua_window_position(lua_State *L)
@@ -277,10 +224,10 @@ int lua_window_poll_events(lua_State *L)
     return 0;
 }
 
-int lua_window_draw(lua_State *L)
+int lua_window_swap_buffers(lua_State *L)
 {
     lua_window *w = lua_window_check(L, 1);
-    window_draw(&(w->w_handle));
+    window_swap_buffers(&(w->w_handle));
     return 0;
 }
 
@@ -320,8 +267,6 @@ int lua_window_tostring(lua_State *L)
 int lua_window_gc(lua_State *L)
 {
     lua_window *w = lua_window_check(L, 1);
-    if(w->graphics_context_ref)
-        luaL_unref(L, LUA_REGISTRYINDEX, w->graphics_context_ref);
     window_destroy(&(w->w_handle));
     return 0;
 }
@@ -330,11 +275,7 @@ static const luaL_reg lua_window_meta[] = {
     {"isValid", lua_util_udata_is_valid},
     {"open", lua_window_open},
     {"close", lua_window_close},
-    {"graphicsContext", lua_window_graphics_context},
-    {"setGraphicsContext", lua_window_set_graphics_context},
     {"deltaTime", lua_window_delta_time},
-    {"clearColor", lua_window_get_clear_color},
-    {"setClearColor", lua_window_set_clear_color},
     {"position", lua_window_position},
     {"setPosition", lua_window_set_position},
     {"size", lua_window_size},
@@ -346,7 +287,7 @@ static const luaL_reg lua_window_meta[] = {
     {"restore", lua_window_restore},
     {"shouldClose", lua_window_should_close},
     {"pollEvents", lua_window_poll_events},
-    {"draw", lua_window_draw},
+    {"swapBuffers", lua_window_swap_buffers},
     {"addEventCallback", lua_window_add_event_callback},
     {"__tostring", lua_window_tostring},
     {"__gc", lua_window_gc},

@@ -12,8 +12,8 @@ include("graphics.lua");
 include("events.lua");
 
 function main()
-    lj2d.graphics._load();
     lj2d.window._load();
+    lj2d.graphics._load();
 
     lj2d.load();
 
@@ -29,10 +29,12 @@ function main()
 
         dt = lj2d.window.deltaTime();
         -- TODO
-        lj2d.update(dt);
-        --lj2d.draw();
 
-        lj2d.window._draw();
+        lj2d.update(dt);
+
+        lj2d.draw();
+
+        lj2d.window._swapBuffers();
     end
 
     lj2d.quit();

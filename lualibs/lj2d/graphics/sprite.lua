@@ -48,16 +48,11 @@ S.__metatable = S;
 S.__type = "LJ2DSprite";
 
 function S:_updateLToWMatrix()
-    if not self._gobj or not self._gobj:isValid() then
-        return;
-    end
-
     local m = luajogo.mat4x4();
     m:translateInPlace(luajogo.vec3(self._pos.x, self._pos.y, 0));
     m:scale(luajogo.vec3(self._size.x, self._size.y, 1));
     m:rotateEuler(luajogo.vec3(0, 0, self._rot));
-    self._gobj:setShaderParam("LocalToWorldMatrix", m);
-    self._gobj:setShaderParam("BaseColor", self._color);
+    self._lToWMat = m;
 end
 
 function S:texture()
@@ -109,12 +104,23 @@ function S:setSize(size)
     self:_updateLToWMatrix();
 end
 
+function S:draw()
+    luajogo.graphics.useShaderProgram(spriteShader);
+    luajogo.graphics.useTexture(self._gtex);
+
+    luajogo.graphics.setShaderParam(spriteShader, "LocalToWorldMatrix", self._lToWMat);
+    luajogo.graphics.setShaderParam(spriteShader, "ScreenSize", lj2d.window.size());
+    luajogo.graphics.setShaderParam(spriteShader, "BaseColor", self._color);
+
+    luajogo.graphics.useVertexArray(spriteVertexArray);
+
+    luajogo.graphics.draw();
+end
+
 function S:destroy()
-    if self._gobj and self._gobj:isValid() then
-        self._gobj:destroy();
-    end
-    if self._gtex and self._gtex:isValid() then
-        self._gtex:destroy();
+    if self._gtex then
+        luajogo.graphics.deleteTexture(self._gtex);
+        self._gtex = nil;
     end
 end
 
@@ -122,12 +128,12 @@ function lj2d.graphics.createSprite(texture, size, position, rotation)
     assert(type(texture) == "texture", "Invalid texture");
 
     if not spriteShader then
-        local vs = lj2d.graphics._context:createShader(VERTEX_CODE, luajogo.VERTEX_SHADER);
-        local fs = lj2d.graphics._context:createShader(FRAGMENT_CODE, luajogo.FRAGMENT_SHADER);
-        spriteShader = lj2d.graphics._context:createShaderProgram(vs, fs);
+        local vs = luajogo.graphics.createShader(VERTEX_CODE, luajogo.graphics.VERTEX_SHADER);
+        local fs = luajogo.graphics.createShader(FRAGMENT_CODE, luajogo.graphics.FRAGMENT_SHADER);
+        spriteShader = luajogo.graphics.createShaderProgram(vs, fs);
     end
     if not spriteVertexArray then
-        local va = lj2d.graphics._context:createVertexArray({
+        local va = luajogo.graphics.createVertexArray({
             0, 0, 0, 0,
             0, 1, 0, 1,
             1, 1, 1, 1,
@@ -136,8 +142,8 @@ function lj2d.graphics.createSprite(texture, size, position, rotation)
             0, 1, 3,
             1, 2, 3,
         });
-        va:setAttribute(0, 2);
-        va:setAttribute(1, 2);
+        luajogo.graphics.setVertexArrayAttribute(va, 0, 2);
+        luajogo.graphics.setVertexArrayAttribute(va, 1, 2);
         spriteVertexArray = va;
     end
 
@@ -152,15 +158,9 @@ function lj2d.graphics.createSprite(texture, size, position, rotation)
     sprite._rot = rotation or 0;
     sprite._color = luajogo.color("white");
 
-    sprite._gtex = lj2d.graphics._context:createTexture(texture);
-    sprite._gobj = lj2d.graphics._context:createObject();
-    sprite._gobj:setShaderProgram(spriteShader);
-    sprite._gobj:setVertexArray(spriteVertexArray);
-    sprite._gobj:setTexture(sprite._gtex);
+    sprite._gtex = luajogo.graphics.createTexture(texture);
 
     sprite:_updateLToWMatrix();
-
-    lj2d.graphics._context:refreshDrawOrder();
 
     return sprite;
 end

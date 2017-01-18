@@ -101,7 +101,6 @@ function lj2d.load()
         }    
     });
     lj2d.window.setTitle("LJ2D demo");
-    lj2d.window.setClearColor(luajogo.color(150, 150, 150, 255));
 
     local texAsset = luajogo.assets.load("/tileset.png");
     local tex = luajogo.texture.load(texAsset);
@@ -116,8 +115,14 @@ function lj2d.update(deltaTime)
     sprite:setRotation(sprite:rotation() + deltaTime * 45);
 end
 
+function lj2d.draw()
+    lj2d.graphics.clear(luajogo.color(150, 150, 150, 255));
+    sprite:draw();
+end
+
 function lj2d.quit()
     if sprite then
         sprite:destroy();
+        sprite = nil;
     end
 end

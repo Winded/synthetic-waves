@@ -10,6 +10,8 @@ void window_init(window *w_handle, const char *title, int width, int height)
 {
     memset(w_handle, 0, sizeof(window));
 
+    graphics_version g_ver = graphics_opengl_3_2;
+
     Uint32 wFlags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN;
 #ifdef USE_OPENGL
     wFlags |= SDL_WINDOW_OPENGL;
@@ -28,7 +30,7 @@ void window_init(window *w_handle, const char *title, int width, int height)
     // SDL_GL_CONTEXT_CORE gives us only the newer version, deprecated functions are disabled
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-    int v;
+    int v = 0;
     if(SDL_GL_GetAttribute(GL_VERSION_3_2, &v) && v) {
         // 3.2 is part of the modern versions of OpenGL, but most video cards whould be able to run it
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -37,7 +39,7 @@ void window_init(window *w_handle, const char *title, int width, int height)
         // You may need to change this to 16 or 32 for your system
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
         SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
-        w_handle->graphics_api = window_opengl_3_2;
+        g_ver = graphics_opengl_3_2;
     }
     // TODO more versions support
     if(!v) {
@@ -50,8 +52,9 @@ void window_init(window *w_handle, const char *title, int width, int height)
     //SDL_GL_SetSwapInterval(1);
     SDL_GL_SetSwapInterval(0);
 
-    glewExperimental = GL_TRUE;
-    glewInit();
+    if(!graphics_initialized()) {
+        graphics_init(g_ver);
+    }
 
     glViewport(0, 0, width, height);
 #endif
@@ -77,11 +80,6 @@ void window_close(window *w_handle)
     if(w_handle->is_valid && (SDL_GetWindowFlags(w_handle->sdl_window) & SDL_WINDOW_SHOWN) == SDL_WINDOW_SHOWN) {
         SDL_HideWindow(w_handle->sdl_window);
     }
-}
-
-void window_set_graphics_context(window *w_handle, const graphics_context *context)
-{
-    w_handle->g_context = context;
 }
 
 void window_get_clear_color(const window *w_handle, float *color)
@@ -134,13 +132,8 @@ float window_get_time(window *w_handle)
     return (float)(w_handle->time * 1000 / (double)SDL_GetPerformanceFrequency() * 0.001f);
 }
 
-void window_draw(window *w_handle)
+void window_swap_buffers(window *w_handle)
 {
-    if(w_handle->g_context) {
-        graphics_clear(w_handle->g_context, w_handle->clear_color);
-        graphics_draw(w_handle->g_context);
-    }
-
 #ifdef USE_OPENGL
     SDL_GL_SwapWindow(w_handle->sdl_window);
 #endif

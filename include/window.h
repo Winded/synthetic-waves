@@ -13,11 +13,6 @@
 
 #define WINDOW_MAX_CALLBACKS 20
 
-typedef enum window_graphics_api {
-    window_opengl_3_2,
-    // TODO add more support
-} window_graphics_api;
-
 typedef struct window_event_callback
 {
     void(*callback)(struct window*, SDL_Event*, void*);
@@ -29,9 +24,7 @@ typedef struct window
         char is_valid;
 
         SDL_Window *sdl_window;
-        window_graphics_api graphics_api;
         void *sdl_render_context;
-        graphics_context *g_context;
 
         float clear_color[4];
 
@@ -50,8 +43,6 @@ void window_init(window *w_handle, const char *title, int width, int height);
 void window_open(window *w_handle);
 void window_close(window *w_handle);
 
-void window_set_graphics_context(window *w_handle, const graphics_context *context);
-
 void window_get_clear_color(const window *w_handle, float *color);
 void window_set_clear_color(window *w_handle, const float *color);
 
@@ -67,7 +58,7 @@ void window_set_title(window *w_handle, const char *title);
 float window_get_delta_time(window *w_handle);
 float window_get_time(window *w_handle);
 
-void window_draw(window *w_handle);
+void window_swap_buffers(window *w_handle);
 
 void window_poll_events(window *w_handle);
 

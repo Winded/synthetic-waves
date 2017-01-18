@@ -5,77 +5,238 @@
 #include <lua_texture.h>
 #include <memory.h>
 
-lua_graphics_context *lua_graphics_to(lua_State *L, int index)
+int lua_graphics_is_feature_enabled(lua_State *L)
 {
-    lua_graphics_context *ctx = (lua_graphics_context*)lua_touserdata(L, index);
-    if(ctx == NULL) luaL_typerror(L, index, "graphicsContext");
-    return ctx;
-}
-
-lua_graphics_context *lua_graphics_check(lua_State *L, int index)
-{
-    luaL_checktype(L, index, LUA_TUSERDATA);
-    lua_graphics_context *ctx = (lua_graphics_context*)luaL_checkudata(L, index, "graphicsContext");
-    if(ctx == NULL) luaL_typerror(L, index, "graphicsContext");
-    return ctx;
-}
-
-lua_graphics_context *lua_graphics_new(lua_State *L)
-{
-    lua_graphics_context *lctx = (lua_graphics_context*)lua_newuserdata(L, sizeof(lua_graphics_context));
-    memset(lctx, 0, sizeof(lua_graphics_context));
-    luaL_getmetatable(L, "graphicsContext");
-    lua_setmetatable(L, -2);
-    return lctx;
-}
-
-int lua_graphics_create(lua_State *L)
-{
-    lua_graphics_context *ctx = lua_graphics_new(L);
-    graphics_context_init(ctx);
-    graphics_set_feature(ctx, graphics_feature_depth_test, 1);
-    graphics_set_feature(ctx, graphics_feature_blend, 1);
+    int feature = luaL_checkinteger(L, 1);
+    lua_pushinteger(L, graphics_is_feature_enabled(feature));
     return 1;
+}
+
+int lua_graphics_set_feature_enabled(lua_State *L)
+{
+    int feature = luaL_checkinteger(L, 1);
+    int enabled = lua_toboolean(L, 2);
+    graphics_set_feature_enabled(feature, enabled);
+    return 0;
 }
 
 int lua_graphics_create_shader(lua_State *L)
 {
-    graphics_context *ctx = lua_graphics_check(L, 1);
-    const char *code = luaL_checkstring(L, 2);
-    int type = luaL_checkinteger(L, 3);
+    const char *code = luaL_checkstring(L, 1);
+    int type = luaL_checkinteger(L, 2);
 
-    graphics_shader *shader = graphics_shader_create(ctx, code, type);
-    lua_graphics_shader_push(L, shader);
+    char errBuf[2048];
+    int handle = graphics_shader_create(code, type, errBuf);
+    if(!handle) {
+        luaL_error(L, errBuf);
+        return 0;
+    }
+
+    lua_pushinteger(L, handle);
     return 1;
+}
+
+int lua_graphics_delete_shader(lua_State *L)
+{
+    int handle = luaL_checkinteger(L, 1);
+    graphics_shader_destroy(handle);
+    return 0;
 }
 
 int lua_graphics_create_shader_program(lua_State *L)
 {
-    graphics_context *ctx = lua_graphics_check(L, 1);
-    const graphics_shader *vShader = lua_graphics_shader_check(L, 2);
-    const graphics_shader *fShader = lua_graphics_shader_check(L, 3);
+    int vertex_handle = luaL_checkinteger(L, 1);
+    int fragment_handle = luaL_checkinteger(L, 2);
 
-    graphics_shader_program *p = graphics_shader_program_create(ctx, vShader, fShader);
-    lua_graphics_shader_program_push(L, p);
+    char errBuf[2048];
+    int handle = graphics_shader_program_create(vertex_handle, fragment_handle, errBuf);
+    if(!handle) {
+        luaL_error(L, errBuf);
+        return 0;
+    }
+
+    lua_pushinteger(L, handle);
+    return 1;
+}
+
+int lua_graphics_delete_shader_program(lua_State *L)
+{
+    int handle = luaL_checkinteger(L, 1);
+    graphics_shader_program_destroy(handle);
+    return 0;
+}
+
+int lua_graphics_use_shader_program(lua_State *L)
+{
+    int handle = luaL_checkinteger(L, 1);
+    graphics_shader_program_use(handle);
+    return 0;
+}
+
+int lua_graphics_shader_param_name_to_id(lua_State *L)
+{
+    int handle = luaL_checkinteger(L, 1);
+    const char *name = luaL_checkstring(L, 2);
+    int id = graphics_shader_param_name_to_id(handle, name);
+    if(id > -1) {
+        lua_pushinteger(L, id);
+    }
+    else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
+int lua_graphics_set_shader_param(lua_State *L)
+{
+    int handle = luaL_checkinteger(L, 1);
+
+    int id = 0;
+    if(lua_isstring(L, 2)) {
+        const char *name = luaL_checkstring(L, 2);
+        id = graphics_shader_param_name_to_id(handle, name);
+    }
+    else {
+        id = luaL_checkinteger(L, 2);
+    }
+
+    luaL_getmetatable(L, "vec2");
+    luaL_getmetatable(L, "vec3");
+    luaL_getmetatable(L, "vec4");
+    luaL_getmetatable(L, "color");
+    luaL_getmetatable(L, "mat4x4");
+
+    if(!lua_isnumber(L, 3) && !lua_getmetatable(L, 3)) {
+        luaL_error(L, "Shader param value must be number, vec2, vec3, vec4, color or mat4x4");
+        return 0;
+    }
+
+    char errBuf[1024];
+    int result = 0;
+
+    if(lua_isnumber(L, 3)) {
+        float value = lua_tonumber(L, 3);
+        result = graphics_shader_param_set(id, &value, 1, errBuf);
+    }
+    else if(lua_equal(L, -1, -6)) {
+        const vec2 *value = lua_math_vec2_check(L, 3);
+        result = graphics_shader_param_set(id, (float*)value, 2, errBuf);
+    }
+    else if(lua_equal(L, -1, -5)) {
+        const vec3 *value = lua_math_vec3_check(L, 3);
+        result = graphics_shader_param_set(id, (float*)value, 3, errBuf);
+    }
+    else if(lua_equal(L, -1, -4)) {
+        const vec4 *value = lua_math_vec4_check(L, 3);
+        result = graphics_shader_param_set(id, (float*)value, 4, errBuf);
+    }
+    else if(lua_equal(L, -1, -3)) {
+        const lua_color *c = lua_color_check(L, 3);
+        float value[] = {(float)(*c)[0] / 255.f, (float)(*c)[1] / 255.f, (float)(*c)[2] / 255.f, (float)(*c)[3] / 255.f};
+        result = graphics_shader_param_set(id, value, 4, errBuf);
+    }
+    else if(lua_equal(L, -1, -2)) {
+        const mat4x4 *value = lua_math_mat4x4_check(L, 3);
+        result = graphics_shader_param_set(id, value, 4 * 4, errBuf);
+    }
+    else {
+        luaL_error(L, "Shader param value must be number, vec2, vec3, vec4, color or mat4x4");
+    }
+
+    if(!result) {
+        fprintf(stderr, errBuf);
+    }
+
+    lua_pushboolean(L, result);
     return 1;
 }
 
 int lua_graphics_create_texture(lua_State *L)
 {
-    graphics_context *ctx = lua_graphics_check(L, 1);
+    const lua_texture *texture = lua_texture_check(L, 1);
+
+    char errBuf[1024];
+    int handle = graphics_texture_create(texture->data, texture->width, texture->height, texture->num_channels, errBuf);
+    if(!handle) {
+        luaL_error(L, errBuf);
+        return 0;
+    }
+
+    lua_pushinteger(L, handle);
+    return 1;
+}
+
+int lua_graphics_update_texture(lua_State *L)
+{
+    int handle = luaL_checkinteger(L, 1);
     const lua_texture *texture = lua_texture_check(L, 2);
 
-    void *data = malloc(texture->data_size);
-    memcpy(data, texture->data, texture->data_size);
-    graphics_texture *t = graphics_texture_create(ctx, data, texture->width, texture->height, texture->num_channels);
-    lua_graphics_texture_push(L, t);
+    char errBuf[1024];
+    int result = graphics_texture_update(handle, texture->data, texture->width, texture->height, texture->num_channels, errBuf);
+    if(!result) {
+        luaL_error(L, errBuf);
+        return 0;
+    }
 
-    return 1;
+    return 0;
+}
+
+int lua_graphics_delete_texture(lua_State *L)
+{
+    int handle = luaL_checkinteger(L, 1);
+    graphics_texture_destroy(handle);
+    return 0;
+}
+
+int lua_graphics_use_texture(lua_State *L)
+{
+    int handle = luaL_checkinteger(L, 1);
+    graphics_texture_use(handle);
+    return 0;
 }
 
 int lua_graphics_create_vertex_array(lua_State *L)
 {
-    graphics_context *ctx = lua_graphics_check(L, 1);
+    // TODO lua_asset_data loading
+
+    luaL_checktype(L, 1, LUA_TTABLE);
+    int vBufSize = lua_objlen(L, 1);
+    float *vBuf = (float*)malloc(vBufSize * sizeof(float));
+    lua_pushnil(L);
+    while(lua_next(L, 1)) {
+        float value = luaL_checknumber(L, -1);
+        int idx = luaL_checkinteger(L, -2) - 1;
+        if(idx >= 0 && idx < vBufSize)
+            vBuf[idx] = value;
+        lua_pop(L, 1);
+    }
+
+    luaL_checktype(L, 2, LUA_TTABLE);
+    int eBufSize = lua_objlen(L, 2);
+    int *eBuf = (int*)malloc(eBufSize * sizeof(int));
+    lua_pushnil(L);
+    while(lua_next(L, 2)) {
+        int value = luaL_checknumber(L, -1);
+        int idx = luaL_checkinteger(L, -2) - 1;
+        if(idx >= 0 && idx < eBufSize)
+            eBuf[idx] = value;
+        lua_pop(L, 1);
+    }
+
+    char errBuf[1024];
+    int handle = graphics_vertex_array_create(vBuf, vBufSize, eBuf, eBufSize, errBuf);
+    if(!handle) {
+        luaL_error(L, errBuf);
+        return 0;
+    }
+
+    lua_pushinteger(L, handle);
+    return 1;
+}
+
+int lua_graphics_update_vertex_array(lua_State *L)
+{
+    int handle = luaL_checkinteger(L, 1);
 
     // TODO lua_asset_data loading
 
@@ -103,509 +264,135 @@ int lua_graphics_create_vertex_array(lua_State *L)
         lua_pop(L, 1);
     }
 
-    graphics_vertex_array *va = graphics_vertex_array_create(ctx, vBuf, vBufSize, eBuf, eBufSize);
-    free(vBuf);
-    free(eBuf);
-    lua_graphics_vertex_array_push(L, va);
-    return 1;
-}
-
-int lua_graphics_create_object(lua_State *L)
-{
-    graphics_object *ctx = lua_graphics_check(L, 1);
-    graphics_object *obj = graphics_object_create(ctx);
-    lua_graphics_object_push(L, obj);
-    return 1;
-}
-
-int lua_graphics_set_shader_param(lua_State *L)
-{
-    graphics_context *ctx = lua_graphics_check(L, 1);
-    const char *name = luaL_checkstring(L, 2);
-
-    luaL_getmetatable(L, "vec2");
-    luaL_getmetatable(L, "vec3");
-    luaL_getmetatable(L, "vec4");
-    luaL_getmetatable(L, "color");
-    luaL_getmetatable(L, "mat4x4");
-
-    if(!lua_isnumber(L, 3) && !lua_getmetatable(L, 3)) {
-        luaL_error(L, "Shader param value must be number, vec2, vec3, vec4, color or mat4x4");
+    char errBuf[1024];
+    int result = graphics_vertex_array_update(handle, vBuf, vBufSize, eBuf, eBufSize, errBuf);
+    if(!result) {
+        luaL_error(L, errBuf);
         return 0;
     }
 
-    if(lua_isnumber(L, 3)) {
-        float value = lua_tonumber(L, 3);
-        graphics_shader_param_set(ctx, name, &value, 1);
-    }
-    else if(lua_equal(L, -1, -6)) {
-        const vec2 *value = lua_math_vec2_check(L, 3);
-        graphics_shader_param_set(ctx, name, (float*)value, 2);
-    }
-    else if(lua_equal(L, -1, -5)) {
-        const vec3 *value = lua_math_vec3_check(L, 3);
-        graphics_shader_param_set(ctx, name, (float*)value, 3);
-    }
-    else if(lua_equal(L, -1, -4)) {
-        const vec4 *value = lua_math_vec4_check(L, 3);
-        graphics_shader_param_set(ctx, name, (float*)value, 4);
-    }
-    else if(lua_equal(L, -1, -3)) {
-        const lua_color *c = lua_color_check(L, 3);
-        float value[] = {(float)(*c)[0] / 255.f, (float)(*c)[1] / 255.f, (float)(*c)[2] / 255.f, (float)(*c)[3] / 255.f};
-        graphics_shader_param_set(ctx, name, value, 4);
-    }
-    else if(lua_equal(L, -1, -2)) {
-        const mat4x4 *value = lua_math_mat4x4_check(L, 3);
-        graphics_shader_param_set(ctx, name, value, 4 * 4);
-    }
-    else {
-        luaL_error(L, "Shader param value must be number, vec2, vec3, vec4, color or mat4x4");
-    }
     return 0;
 }
 
-int lua_graphics_delete_shader_param(lua_State *L)
+int lua_graphics_delete_vertex_array(lua_State *L)
 {
-    graphics_context *ctx = lua_graphics_check(L, 1);
-    const char *name = luaL_checkstring(L, 2);
-    graphics_shader_param_delete(ctx, name);
+    int handle = luaL_checkinteger(L, 1);
+    int result = graphics_vertex_array_destroy(handle);
+    if(!result) {
+        luaL_error(L, "Failed to delete vertex array (invalid handle, perhaps?)");
+    }
     return 0;
 }
 
-int lua_graphics_refresh_draw_order(lua_State *L)
+int lua_graphics_use_vertex_array(lua_State *L)
 {
-    graphics_context *ctx = lua_graphics_check(L, 1);
-    graphics_refresh_draw_order(ctx);
+    int handle = luaL_checkinteger(L, 1);
+    int result = graphics_vertex_array_use(handle);
+    if(!result) {
+        luaL_error(L, "Failed to bind vertex array (invalid handle, perhaps?)");
+    }
     return 0;
 }
 
-int lua_graphics_gc(lua_State *L)
+int lua_graphics_set_vertex_array_attribute(lua_State *L)
 {
-    lua_graphics_context *ctx = lua_graphics_check(L, 1);
-    if(!ctx->is_valid) return 0;
-    graphics_context_destroy(ctx);
+    int handle = luaL_checkinteger(L, 1);
+    int id = luaL_checkinteger(L, 2);
+    int size = luaL_checkinteger(L, 3);
+
+    int result = graphics_vertex_array_set_attribute(handle, id, size);
+    if(!result) {
+        luaL_error(L, "Failed to set VA attribute (invalid handle, perhaps?)");
+    }
     return 0;
 }
 
-static const luaL_reg lua_graphics_meta[] = {
-    {"isValid", lua_util_udata_is_valid},
+int lua_graphics_delete_vertex_array_attribute(lua_State *L)
+{
+    int handle = luaL_checkinteger(L, 1);
+    int id = luaL_checkinteger(L, 2);
+
+    int result = graphics_vertex_array_delete_attribute(handle, id);
+    if(!result) {
+        luaL_error(L, "Failed to set VA attribute (invalid handle, perhaps?)");
+    }
+    return 0;
+}
+
+int lua_graphics_draw(lua_State *L)
+{
+    graphics_draw();
+    return 0;
+}
+
+int lua_graphics_clear(lua_State *L)
+{
+    lua_color *color = lua_color_check(L, 1);
+    float c[] = {
+        (float)((*color)[0]) / 255.f,
+        (float)((*color)[1]) / 255.f,
+        (float)((*color)[2]) / 255.f,
+        (float)((*color)[3]) / 255.f,
+    };
+    graphics_clear(c);
+    return 0;
+}
+
+static const luaL_reg lua_graphics_lib[] = {
+    {"isFeatureEnabled", lua_graphics_is_feature_enabled},
+    {"setFeatureEnabled", lua_graphics_set_feature_enabled},
+
     {"createShader", lua_graphics_create_shader},
+    {"deleteShader", lua_graphics_delete_shader},
+
     {"createShaderProgram", lua_graphics_create_shader_program},
-    {"createTexture", lua_graphics_create_texture},
-    {"createVertexArray", lua_graphics_create_vertex_array},
-    {"createObject", lua_graphics_create_object},
+    {"deleteShaderProgram", lua_graphics_delete_shader_program},
+    {"useShaderProgram", lua_graphics_use_shader_program},
+
+    {"shaderParamNameToID", lua_graphics_shader_param_name_to_id},
     {"setShaderParam", lua_graphics_set_shader_param},
-    {"deleteShaderParam", lua_graphics_delete_shader_param},
-    {"refreshDrawOrder", lua_graphics_refresh_draw_order},
-    {"__gc", lua_graphics_gc},
+
+    {"createTexture", lua_graphics_create_texture},
+    {"updateTexture", lua_graphics_update_texture},
+    {"deleteTexture", lua_graphics_delete_texture},
+    {"useTexture", lua_graphics_use_texture},
+
+    {"createVertexArray", lua_graphics_create_vertex_array},
+    {"updateVertexArray", lua_graphics_update_vertex_array},
+    {"deleteVertexArray", lua_graphics_delete_vertex_array},
+    {"useVertexArray", lua_graphics_use_vertex_array},
+
+    {"setVertexArrayAttribute", lua_graphics_set_vertex_array_attribute},
+    {"deleteVertexArrayAttribute", lua_graphics_delete_vertex_array_attribute},
+
+    {"draw", lua_graphics_draw},
+
+    {"clear", lua_graphics_clear},
+
     {0, 0}
 };
 
-void lua_graphics_ctx_load(lua_State *L)
+void lua_graphics_load(lua_State *L)
 {
-    luaL_newmetatable(L, "graphicsContext");
-    luaL_openlib(L, 0, lua_graphics_meta, 0);
-    lua_pushliteral(L, "__index");
-    lua_pushvalue(L, -2);
-    lua_rawset(L, -3);
-    lua_pushliteral(L, "__metatable");
-    lua_pushvalue(L, -2);
-    lua_rawset(L, -3);
-    lua_pop(L, 1);
-}
+    lua_newtable(L);
 
-graphics_shader *lua_graphics_shader_check(lua_State *L, int index)
-{
-    luaL_checktype(L, index, LUA_TUSERDATA);
-    graphics_shader **shader = (graphics_shader**)luaL_checkudata(L, index, "graphicsShader");
-    if(shader == NULL) luaL_typerror(L, index, "graphicsShader");
-    return *shader;
-}
+    luaL_openlib(L, 0, lua_graphics_lib, 0);
 
-void lua_graphics_shader_push(lua_State *L, const graphics_shader *shader)
-{
-    graphics_shader **lctx = (graphics_shader**)lua_newuserdata(L, sizeof(graphics_shader*));
-    *lctx = shader;
-    luaL_getmetatable(L, "graphicsShader");
-    lua_setmetatable(L, -2);
-}
+    // graphics_version
+    lua_pushinteger(L, graphics_opengl_3_2);
+    lua_setfield(L, -2, "OPENGL_3_2");
 
-int lua_graphics_shader_type(lua_State *L)
-{
-    const graphics_shader *shader = lua_graphics_shader_check(L, 1);
-    if(!shader->is_valid) return 0;
-    lua_pushinteger(L, shader->type);
-    return 1;
-}
+    // graphics_feature
+    lua_pushinteger(L, graphics_feature_depth_test);
+    lua_setfield(L, -2, "DEPTH_TEST");
+    lua_pushinteger(L, graphics_feature_blend);
+    lua_setfield(L, -2, "BLEND");
 
-int lua_graphics_shader_code(lua_State *L)
-{
-    const graphics_shader *shader = lua_graphics_shader_check(L, 1);
-    if(!shader->is_valid) return 0;
-    lua_pushstring(L, shader->code);
-    return 1;
-}
-
-int lua_graphics_shader_destroy(lua_State *L)
-{
-    graphics_shader *shader = lua_graphics_shader_check(L, 1);
-    graphics_shader_destroy(shader);
-    return 0;
-}
-
-static const luaL_reg lua_graphics_shader_meta[] = {
-    {"isValid", lua_util_udata_ptr_is_valid},
-    {"type", lua_graphics_shader_type},
-    {"code", lua_graphics_shader_code},
-    {"destroy", lua_graphics_shader_destroy},
-    {0, 0}
-};
-
-void lua_graphics_shader_load(lua_State *L)
-{
-    luaL_newmetatable(L, "graphicsShader");
-    luaL_openlib(L, 0, lua_graphics_shader_meta, 0);
-    lua_pushliteral(L, "__index");
-    lua_pushvalue(L, -2);
-    lua_rawset(L, -3);
-    lua_pushliteral(L, "__metatable");
-    lua_pushvalue(L, -2);
-    lua_rawset(L, -3);
-    lua_pop(L, 1);
-
+    // graphics_shader_type
     lua_pushinteger(L, graphics_vertex_shader);
     lua_setfield(L, -2, "VERTEX_SHADER");
     lua_pushinteger(L, graphics_fragment_shader);
     lua_setfield(L, -2, "FRAGMENT_SHADER");
-}
 
-graphics_shader_program *lua_graphics_shader_program_check(lua_State *L, int index)
-{
-    luaL_checktype(L, index, LUA_TUSERDATA);
-    graphics_shader_program **program = (graphics_shader_program**)luaL_checkudata(L, index, "graphicsShaderProgram");
-    if(program == NULL) luaL_typerror(L, index, "graphicsShaderProgram");
-    return *program;
-}
-
-void lua_graphics_shader_program_push(lua_State *L, const graphics_shader_program *program)
-{
-    graphics_shader_program **lctx = (graphics_shader_program**)lua_newuserdata(L, sizeof(graphics_shader_program*));
-    *lctx = program;
-    luaL_getmetatable(L, "graphicsShaderProgram");
-    lua_setmetatable(L, -2);
-}
-
-int lua_graphics_shader_program_get_shader(lua_State *L)
-{
-    const graphics_shader_program *p = lua_graphics_shader_program_check(L, 1);
-    int type = luaL_checkinteger(L, 2);
-    if(type == graphics_vertex_shader) {
-        lua_graphics_shader_push(L, p->vertex_shader);
-    }
-    else if(type == graphics_fragment_shader) {
-        lua_graphics_shader_push(L, p->fragment_shader);
-    }
-    else {
-        lua_pushnil(L);
-    }
-    return 1;
-}
-
-int lua_graphics_shader_program_destroy(lua_State *L)
-{
-    graphics_shader_program *p = lua_graphics_shader_program_check(L, 1);
-    graphics_shader_program_destroy(p);
-    return 0;
-}
-
-static const luaL_reg lua_graphics_shader_program_meta[] = {
-    {"isValid", lua_util_udata_ptr_is_valid},
-    {"getShader", lua_graphics_shader_program_get_shader},
-    {"destroy", lua_graphics_shader_program_destroy},
-    {0, 0}
-};
-
-void lua_graphics_shader_program_load(lua_State *L)
-{
-    luaL_newmetatable(L, "graphicsShaderProgram");
-    luaL_openlib(L, 0, lua_graphics_shader_program_meta, 0);
-    lua_pushliteral(L, "__index");
-    lua_pushvalue(L, -2);
-    lua_rawset(L, -3);
-    lua_pushliteral(L, "__metatable");
-    lua_pushvalue(L, -2);
-    lua_rawset(L, -3);
-    lua_pop(L, 1);
-}
-
-graphics_texture *lua_graphics_texture_check(lua_State *L, int index)
-{
-    luaL_checktype(L, index, LUA_TUSERDATA);
-    graphics_texture **t = (graphics_texture**)luaL_checkudata(L, index, "graphicsTexture");
-    if(t == NULL) luaL_typerror(L, index, "graphicsTexture");
-    return *t;
-}
-
-void lua_graphics_texture_push(lua_State *L, const graphics_texture *texture)
-{
-    graphics_texture **lt = (graphics_texture**)lua_newuserdata(L, sizeof(graphics_texture*));
-    *lt = texture;
-    luaL_getmetatable(L, "graphicsTexture");
-    lua_setmetatable(L, -2);
-}
-
-int lua_graphics_texture_size(lua_State *L)
-{
-    const graphics_texture *t = lua_graphics_texture_check(L, 1);
-    lua_pushinteger(L, t->width);
-    lua_pushinteger(L, t->height);
-    return 2;
-}
-
-int lua_graphics_texture_destroy(lua_State *L)
-{
-    graphics_texture *t = lua_graphics_texture_check(L, 1);
-    if(t->is_valid)
-        graphics_texture_destroy(t);
-    return 0;
-}
-
-static const luaL_reg lua_graphics_texture_meta[] = {
-    {"isValid", lua_util_udata_ptr_is_valid},
-    {"size", lua_graphics_texture_size},
-    {"destroy", lua_graphics_texture_destroy},
-    {0, 0}
-};
-
-void lua_graphics_texture_load(lua_State *L)
-{
-    luaL_newmetatable(L, "graphicsTexture");
-    luaL_openlib(L, 0, lua_graphics_texture_meta, 0);
-    lua_pushliteral(L, "__index");
-    lua_pushvalue(L, -2);
-    lua_rawset(L, -3);
-    lua_pushliteral(L, "__metatable");
-    lua_pushvalue(L, -2);
-    lua_rawset(L, -3);
-    lua_pop(L, 1);
-}
-
-graphics_vertex_array *lua_graphics_vertex_array_check(lua_State *L, int index)
-{
-    luaL_checktype(L, index, LUA_TUSERDATA);
-    graphics_vertex_array **va = (graphics_vertex_array**)luaL_checkudata(L, index, "graphicsVertexArray");
-    if(va == NULL) luaL_typerror(L, index, "graphicsVertexArray");
-    return *va;
-}
-
-void lua_graphics_vertex_array_push(lua_State *L, const graphics_vertex_array *varr)
-{
-    graphics_vertex_array **lva = (graphics_vertex_array**)lua_newuserdata(L, sizeof(graphics_vertex_array*));
-    *lva = varr;
-    luaL_getmetatable(L, "graphicsVertexArray");
-    lua_setmetatable(L, -2);
-}
-
-int lua_graphics_vertex_array_set_attribute(lua_State *L)
-{
-    graphics_vertex_array *va = lua_graphics_vertex_array_check(L, 1);
-    int id = luaL_checkinteger(L, 2);
-    int size = luaL_checkinteger(L, 3);
-
-    graphics_vertex_array_set_attribute(va, id, size);
-    return 0;
-}
-
-int lua_graphics_vertex_array_destroy(lua_State *L)
-{
-    graphics_vertex_array *va = lua_graphics_vertex_array_check(L, 1);
-    graphics_vertex_array_destroy(va);
-    return 0;
-}
-
-static const luaL_reg lua_graphics_vertex_array_meta[] = {
-    {"isValid", lua_util_udata_ptr_is_valid},
-    //{"update", lua_graphics_vertex_array_update},
-    {"setAttribute", lua_graphics_vertex_array_set_attribute},
-    {"destroy", lua_graphics_vertex_array_destroy},
-    {0, 0}
-};
-
-void lua_graphics_vertex_array_load(lua_State *L)
-{
-    luaL_newmetatable(L, "graphicsVertexArray");
-    luaL_openlib(L, 0, lua_graphics_vertex_array_meta, 0);
-    lua_pushliteral(L, "__index");
-    lua_pushvalue(L, -2);
-    lua_rawset(L, -3);
-    lua_pushliteral(L, "__metatable");
-    lua_pushvalue(L, -2);
-    lua_rawset(L, -3);
-    lua_pop(L, 1);
-}
-
-graphics_object *lua_graphics_object_check(lua_State *L, int index)
-{
-    luaL_checktype(L, index, LUA_TUSERDATA);
-    graphics_object **obj = (graphics_object**)luaL_checkudata(L, index, "graphicsObject");
-    if(obj == NULL) luaL_typerror(L, index, "graphicsObject");
-    return *obj;
-}
-
-void lua_graphics_object_push(lua_State *L, const graphics_object *object)
-{
-    graphics_object **lobj = (graphics_object**)lua_newuserdata(L, sizeof(graphics_object*));
-    *lobj = object;
-    luaL_getmetatable(L, "graphicsObject");
-    lua_setmetatable(L, -2);
-}
-
-int lua_graphics_object_shader_program(lua_State *L)
-{
-    const graphics_object *obj = lua_graphics_object_check(L, 1);
-    lua_graphics_shader_program_push(L, obj->shader_program);
-    return 1;
-}
-
-int lua_graphics_object_set_shader_program(lua_State *L)
-{
-    graphics_object *obj = lua_graphics_object_check(L, 1);
-    graphics_shader_program *program = lua_graphics_shader_program_check(L, 2);
-    obj->shader_program = program;
-    return 0;
-}
-
-int lua_graphics_object_texture(lua_State *L)
-{
-    const graphics_object *obj = lua_graphics_object_check(L, 1);
-    lua_graphics_texture_push(L, obj->texture);
-    return 1;
-}
-
-int lua_graphics_object_set_texture(lua_State *L)
-{
-    graphics_object *obj = lua_graphics_object_check(L, 1);
-    graphics_texture *texture = lua_graphics_texture_check(L, 2);
-    obj->texture = texture;
-    return 0;
-}
-
-int lua_graphics_object_vertex_array(lua_State *L)
-{
-    const graphics_object *obj = lua_graphics_object_check(L, 1);
-    lua_graphics_vertex_array_push(L, obj->vertex_array);
-    return 1;
-}
-
-int lua_graphics_object_set_vertex_array(lua_State *L)
-{
-    graphics_object *obj = lua_graphics_object_check(L, 1);
-    graphics_vertex_array *va = lua_graphics_vertex_array_check(L, 2);
-    obj->vertex_array = va;
-    return 0;
-}
-
-int lua_graphics_object_set_shader_param(lua_State *L)
-{
-    graphics_object *obj = lua_graphics_object_check(L, 1);
-    const char *name = luaL_checkstring(L, 2);
-
-    luaL_getmetatable(L, "vec2");
-    luaL_getmetatable(L, "vec3");
-    luaL_getmetatable(L, "vec4");
-    luaL_getmetatable(L, "color");
-    luaL_getmetatable(L, "mat4x4");
-
-    if(!lua_isnumber(L, 3) && !lua_getmetatable(L, 3)) {
-        luaL_error(L, "Shader param value must be number, vec2, vec3, vec4, color or mat4x4");
-        return 0;
-    }
-
-    if(lua_isnumber(L, 3)) {
-        float value = lua_tonumber(L, 3);
-        graphics_object_shader_param_set(obj, name, &value, 1);
-    }
-    else if(lua_equal(L, -1, -6)) {
-        const vec2 *value = lua_math_vec2_check(L, 3);
-        graphics_object_shader_param_set(obj, name, (float*)value, 2);
-    }
-    else if(lua_equal(L, -1, -5)) {
-        const vec3 *value = lua_math_vec3_check(L, 3);
-        graphics_object_shader_param_set(obj, name, (float*)value, 3);
-    }
-    else if(lua_equal(L, -1, -4)) {
-        const vec4 *value = lua_math_vec4_check(L, 3);
-        graphics_object_shader_param_set(obj, name, (float*)value, 4);
-    }
-    else if(lua_equal(L, -1, -3)) {
-        const lua_color *c = lua_color_check(L, 3);
-        float value[] = {(float)(*c)[0] / 255.f, (float)(*c)[1] / 255.f, (float)(*c)[2] / 255.f, (float)(*c)[3] / 255.f};
-        graphics_object_shader_param_set(obj, name, value, 4);
-    }
-    else if(lua_equal(L, -1, -2)) {
-        const mat4x4 *value = lua_math_mat4x4_check(L, 3);
-        graphics_object_shader_param_set(obj, name, value, 4 * 4);
-    }
-    else {
-        luaL_error(L, "Shader param value must be number, vec2, vec3, vec4, color or mat4x4");
-    }
-    return 0;
-}
-
-int lua_graphics_object_delete_shader_param(lua_State *L)
-{
-    graphics_object *obj = lua_graphics_object_check(L, 1);
-    const char *name = luaL_checkstring(L, 2);
-    graphics_object_shader_param_delete(obj, name);
-    return 0;
-}
-
-int lua_graphics_object_destroy(lua_State *L)
-{
-    graphics_object *obj = lua_graphics_object_check(L, 1);
-    graphics_object_destroy(obj);
-    return 0;
-}
-
-static const luaL_reg lua_graphics_object_meta[] = {
-    {"isValid", lua_util_udata_ptr_is_valid},
-    {"shaderProgram", lua_graphics_object_shader_program},
-    {"setShaderProgram", lua_graphics_object_set_shader_program},
-    {"texture", lua_graphics_object_texture},
-    {"setTexture", lua_graphics_object_set_texture},
-    {"vertexArray", lua_graphics_object_vertex_array},
-    {"setVertexArray", lua_graphics_object_set_vertex_array},
-    {"setShaderParam", lua_graphics_object_set_shader_param},
-    {"deleteShaderParam", lua_graphics_object_delete_shader_param},
-    {"destroy", lua_graphics_object_destroy},
-    {0, 0}
-};
-
-void lua_graphics_object_load(lua_State *L)
-{
-    luaL_newmetatable(L, "graphicsObject");
-    luaL_openlib(L, 0, lua_graphics_object_meta, 0);
-    lua_pushliteral(L, "__index");
-    lua_pushvalue(L, -2);
-    lua_rawset(L, -3);
-    lua_pushliteral(L, "__metatable");
-    lua_pushvalue(L, -2);
-    lua_rawset(L, -3);
-    lua_pop(L, 1);
-}
-
-void lua_graphics_load(lua_State *L)
-{
-    lua_graphics_ctx_load(L);
-    lua_graphics_shader_load(L);
-    lua_graphics_shader_program_load(L);
-    lua_graphics_texture_load(L);
-    lua_graphics_vertex_array_load(L);
-    lua_graphics_object_load(L);
-
-    lua_newtable(L);
-    lua_pushcfunction(L, lua_graphics_create);
-    lua_setfield(L, -2, "createContext");
     lua_setfield(L, -2, "graphics");
 }

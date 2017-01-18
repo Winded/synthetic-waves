@@ -8,6 +8,9 @@ function lj2d.load() end
 -- Called once every frame
 function lj2d.update(deltaTime) end
 
+-- Called when frame is drawn
+function lj2d.draw() end
+
 -- Called when the game closes
 function lj2d.quit() end
 
