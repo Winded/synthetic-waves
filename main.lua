@@ -94,6 +94,8 @@ include("lualibs/lj2d/main.lua");
 local sprite;
 local spriteSize;
 
+local sound;
+
 function lj2d.load()
     luajogo.assets.configure({
         assetSources = {
@@ -107,12 +109,26 @@ function lj2d.load()
     sprite = lj2d.graphics.createSprite(tex);
     spriteSize = sprite:size();
     sprite:setPosition(luajogo.vec2(50, 50));
+
+    local soundAsset = luajogo.assets.load("/memes.wav");
+    local clip = lj2d.audio.createClip(soundAsset);
+    sound = lj2d.audio.createSource(clip);
 end
 
 function lj2d.update(deltaTime)
     spriteSize = spriteSize + luajogo.vec2(2, 2) * deltaTime;
     sprite:setSize(luajogo.vec2(math.floor(spriteSize.x), math.floor(spriteSize.y)))
     sprite:setRotation(sprite:rotation() + deltaTime * 45);
+end
+
+function lj2d.keyDown(keycode)
+    if keycode == "Space" then
+        if sound:isPlaying() then
+            sound:pause();
+        else
+            sound:play();
+        end
+    end
 end
 
 function lj2d.draw()
@@ -124,5 +140,10 @@ function lj2d.quit()
     if sprite then
         sprite:destroy();
         sprite = nil;
+    end
+    if sound then
+        local clip = sound:clip();
+        sound:destroy();
+        clip:destroy();
     end
 end

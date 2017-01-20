@@ -3,10 +3,18 @@ cmake_minimum_required(VERSION 3.1)
 
 set(LUAJIT_DIR thirdparty/luajit)
 set(SDL_DIR thirdparty/sdl)
+set(OPENAL_DIR thirdparty/openal)
 set(GLEW_DIR thirdparty/glew)
+
+if(WIN32)
+    set(OPENAL_TARGET OpenAL32)
+else()
+    set(OPENAL_TARGET openal)
+endif()
 
 add_subdirectory(${LUAJIT_DIR})
 add_subdirectory(${SDL_DIR})
+add_subdirectory(${OPENAL_DIR})
 add_subdirectory(${GLEW_DIR})
 
 file(GLOB_RECURSE SRC_LIST
@@ -21,11 +29,13 @@ target_link_libraries(${PROJECT_NAME}
     SDL2
     SDL2main
     shlwapi
+    ${OPENAL_TARGET}
 )
 
 include_directories(include
     ${LUAJIT_DIR}/src
     ${SDL_DIR}/include
+    ${OPENAL_DIR}/include
     ${GLEW_DIR}/include
     ${CMAKE_CURRENT_BINARY_DIR}/${LUAJIT_DIR}
 )
@@ -54,5 +64,10 @@ add_custom_command(TARGET luajogo POST_BUILD
 add_custom_command(TARGET luajogo POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:SDL2>
+        $<TARGET_FILE_DIR:luajogo>)
+
+add_custom_command(TARGET luajogo POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:${OPENAL_TARGET}>
         $<TARGET_FILE_DIR:luajogo>)
 

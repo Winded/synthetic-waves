@@ -14,6 +14,10 @@ function lj2d.window._load()
     lj2d.window._clearColor = luajogo.color("black");
 end
 
+function lj2d.window._quit()
+    lj2d.window._window = nil;
+end
+
 function lj2d.window._hookEvents()
     lj2d.window._window:addEventCallback("onWindowResize", function(w, data) 
         lj2d.resize(data.width, data.height);

@@ -9,11 +9,13 @@ lj2d = {};
 include("window.lua");
 include("input.lua");
 include("graphics.lua");
+include("audio.lua");
 include("events.lua");
 
 function main()
     lj2d.window._load();
     lj2d.graphics._load();
+    lj2d.audio._load();
 
     lj2d.load();
 
@@ -38,6 +40,10 @@ function main()
     end
 
     lj2d.quit();
+
+    lj2d.audio._quit();
+    lj2d.graphics._quit();
+    lj2d.window._quit();
 end
 
 return lj2d;

@@ -13,6 +13,7 @@
 #include <lua_window.h>
 #include <lua_graphics.h>
 #include <lua_input.h>
+#include <lua_audio.h>
 #include <SDL.h>
 #include <window.h>
 #include <graphics.h>
@@ -54,6 +55,7 @@ void openlibs(lua_State *L)
 
     lua_window_load(L);
     lua_graphics_load(L);
+    lua_audio_load(L);
 
     lua_setglobal(L, "luajogo");
 }
