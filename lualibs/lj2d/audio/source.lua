@@ -24,6 +24,11 @@ end
 
 function S:setVolume(volume)
 	assert(type(volume) == "number", "Invalid volume");
+	if volume > 1 then
+		volume = 1;
+	elseif volume < 0 then
+		volume = 0;
+	end
 	luajogo.audio.setSourceVolume(self._sourceID, volume);
 end
 

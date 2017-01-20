@@ -10,15 +10,12 @@ in vec2 uvCoordinates;
 
 out vec2 UV;
 
+uniform mat4 WorldToViewportMatrix;
 uniform mat4 LocalToWorldMatrix;
-uniform vec2 ScreenSize;
 
 void main()
 {
-    vec4 pos = LocalToWorldMatrix * vec4(position.xy, 0, 1);
-    pos.x = ((pos.x / ScreenSize.x) * 2 - 1);
-    pos.y = -((pos.y / ScreenSize.y) * 2 - 1);
-    gl_Position = vec4(pos.xyz, 1);
+    gl_Position = WorldToViewportMatrix * LocalToWorldMatrix * vec4(position.xy, 0, 1);
     UV = uvCoordinates;
 }
 ]];
@@ -39,7 +36,6 @@ void main()
 ]];
 
 local spriteShader = nil;
-local spriteVertexArray = nil;
 
 local S = {};
 
@@ -53,6 +49,28 @@ function S:_updateLToWMatrix()
     m:scale(luajogo.vec3(self._size.x, self._size.y, 1));
     m:rotateEuler(luajogo.vec3(0, 0, self._rot));
     self._lToWMat = m;
+end
+
+function S:_updateVertices()
+    local minPos = -self._pivot;
+    local maxPos = -self._pivot + luajogo.vec2(1, 1);
+    local texWidth, texHeight = self._texture:size();
+    local minTexCoords = luajogo.vec2(self._texRegion.position.x / texWidth, self._texRegion.position.y / texHeight);
+    local maxTexCoords = luajogo.vec2((self._texRegion.position.x + self._texRegion.size.x) / texWidth, (self._texRegion.position.y + self._texRegion.size.y) / texHeight);
+
+    local verts = {
+        minPos.x, minPos.y, minTexCoords.x, maxTexCoords.y,
+        minPos.x, maxPos.y, minTexCoords.x, minTexCoords.y,
+        maxPos.x, maxPos.y, maxTexCoords.x, minTexCoords.y,
+        maxPos.x, minPos.y, maxTexCoords.x, maxTexCoords.y
+    }
+
+    luajogo.graphics.updateVertexArray(self._gva, verts, {
+        0, 1, 3,
+        1, 2, 3,
+    });
+    luajogo.graphics.setVertexArrayAttribute(self._gva, 0, 2);
+    luajogo.graphics.setVertexArrayAttribute(self._gva, 1, 2);
 end
 
 function S:texture()
@@ -100,19 +118,50 @@ end
 function S:setSize(size)
     assert(type(size) == "vec2", "Size must be of type vec2");
 
-    self._size = size
+    self._size = size;
     self:_updateLToWMatrix();
+end
+
+function S:pivot()
+    return self._pivot;
+end
+
+function S:setPivot(pivot)
+    assert(type(pivot) == "vec2", "Pivot must be of type vec2");
+
+    self._pivot = pivot;
+    self:_updateVertices();
+end
+
+function S:textureRegion()
+    return self._texRegion;
+end
+
+function S:setTextureRegion(region)
+    assert(type(region.position) == "vec2", "Invalid region position");
+    assert(type(region.size) == "vec2", "Invalid region size");
+
+    self._texRegion = region;
+    self:_updateVertices();
+end
+
+function S:resetTextureRegion()
+    local texWidth, texHeight = self._texture:size();
+    self._texRegion = {
+        position = luajogo.vec2(),
+        size = luajogo.vec2(texWidth, texHeight),
+    };
+    self:_updateVertices();
 end
 
 function S:draw()
     luajogo.graphics.useShaderProgram(spriteShader);
     luajogo.graphics.useTexture(self._gtex);
+    luajogo.graphics.useVertexArray(self._gva);
 
+    luajogo.graphics.setShaderParam(spriteShader, "WorldToViewportMatrix", lj2d.graphics.camera.viewMatrix());
     luajogo.graphics.setShaderParam(spriteShader, "LocalToWorldMatrix", self._lToWMat);
-    luajogo.graphics.setShaderParam(spriteShader, "ScreenSize", lj2d.window.size());
     luajogo.graphics.setShaderParam(spriteShader, "BaseColor", self._color);
-
-    luajogo.graphics.useVertexArray(spriteVertexArray);
 
     luajogo.graphics.draw();
 end
@@ -121,6 +170,10 @@ function S:destroy()
     if self._gtex then
         luajogo.graphics.deleteTexture(self._gtex);
         self._gtex = nil;
+    end
+    if self._gva then
+        luajogo.graphics.deleteVertexArray(self._gva);
+        self._gva = nil;
     end
 end
 
@@ -132,20 +185,6 @@ function lj2d.graphics.createSprite(texture, size, position, rotation)
         local fs = luajogo.graphics.createShader(FRAGMENT_CODE, luajogo.graphics.FRAGMENT_SHADER);
         spriteShader = luajogo.graphics.createShaderProgram(vs, fs);
     end
-    if not spriteVertexArray then
-        local va = luajogo.graphics.createVertexArray({
-            0, 0, 0, 0,
-            0, 1, 0, 1,
-            1, 1, 1, 1,
-            1, 0, 1, 0
-        }, {
-            0, 1, 3,
-            1, 2, 3,
-        });
-        luajogo.graphics.setVertexArrayAttribute(va, 0, 2);
-        luajogo.graphics.setVertexArrayAttribute(va, 1, 2);
-        spriteVertexArray = va;
-    end
 
     local sprite = {};
     setmetatable(sprite, S);
@@ -156,11 +195,25 @@ function lj2d.graphics.createSprite(texture, size, position, rotation)
     sprite._size = size or luajogo.vec2(w, h);
     sprite._pos = position or luajogo.vec3();
     sprite._rot = rotation or 0;
+    sprite._pivot = luajogo.vec2();
     sprite._color = luajogo.color("white");
 
     sprite._gtex = luajogo.graphics.createTexture(texture);
 
+    sprite._gva = luajogo.graphics.createVertexArray({
+        0, 0, 0, 1,
+        0, 1, 0, 0,
+        1, 1, 1, 0,
+        1, 0, 1, 1
+    }, {
+        0, 1, 3,
+        1, 2, 3,
+    });
+    luajogo.graphics.setVertexArrayAttribute(sprite._gva, 0, 2);
+    luajogo.graphics.setVertexArrayAttribute(sprite._gva, 1, 2);
+
     sprite:_updateLToWMatrix();
+    sprite:resetTextureRegion();
 
     return sprite;
 end

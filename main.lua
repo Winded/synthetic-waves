@@ -108,11 +108,19 @@ function lj2d.load()
     local tex = luajogo.texture.load(texAsset);
     sprite = lj2d.graphics.createSprite(tex);
     spriteSize = sprite:size();
-    sprite:setPosition(luajogo.vec2(50, 50));
+    sprite:setPosition(luajogo.vec2(0, 0));
+    sprite:setPivot(luajogo.vec2(0.5, 0.5));
+    sprite:setTextureRegion({
+        position = luajogo.vec2(0, 0),
+        size = luajogo.vec2(16, 16),
+    });
 
     local soundAsset = luajogo.assets.load("/memes.wav");
     local clip = lj2d.audio.createClip(soundAsset);
     sound = lj2d.audio.createSource(clip);
+    sound:setLoop(true);
+
+    lj2d.graphics.camera.setPosition(luajogo.vec2(10, 10));
 end
 
 function lj2d.update(deltaTime)
@@ -128,6 +136,10 @@ function lj2d.keyDown(keycode)
         else
             sound:play();
         end
+    elseif keycode == "Right" then
+        sound:setVolume(sound:volume() + 0.1);
+    elseif keycode == "Left" then
+        sound:setVolume(sound:volume() - 0.1);
     end
 end
 
