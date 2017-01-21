@@ -49,8 +49,8 @@ void window_init(window *w_handle, const char *title, int width, int height)
         return;
     }
 
-    //SDL_GL_SetSwapInterval(1);
-    SDL_GL_SetSwapInterval(0);
+    SDL_GL_SetSwapInterval(1);
+    //SDL_GL_SetSwapInterval(0);
 
     if(!graphics_initialized()) {
         graphics_init(g_ver);

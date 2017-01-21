@@ -1,6 +1,6 @@
 
-function table.contains(table, element)
-    for _, value in pairs(table) do
+function table.contains(t, element)
+    for _, value in pairs(t) do
         if value == element then
             return true;
         end
@@ -8,10 +8,10 @@ function table.contains(table, element)
     return false;
 end
 
-function table.removeValue(table, value)
-    for idx, val in pairs(table) do
+function table.removeValue(t, value)
+    for idx, val in pairs(t) do
         if value == val then
-            table.remove(table, idx);
+            table.remove(t, idx);
             return;
         end
     end

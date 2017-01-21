@@ -9,7 +9,7 @@ function S:_updateSprite()
     local t = 0;
     for i, v in ipairs(self._frames) do
         t = t + v.time;
-        if t > self._time then
+        if t >= self._time then
             frame = v;
             break;
         end

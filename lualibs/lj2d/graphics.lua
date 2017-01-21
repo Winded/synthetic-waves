@@ -9,6 +9,8 @@ include("graphics/sprite.lua");
 
 function lj2d.graphics._load()
     lj2d.graphics.camera.reset();
+
+    luajogo.graphics.setFeatureEnabled(luajogo.graphics.BLEND, true);
 end
 
 function lj2d.graphics._quit()

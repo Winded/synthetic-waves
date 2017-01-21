@@ -193,7 +193,7 @@ function lj2d.graphics.createSprite(texture, size, position, rotation)
 
     sprite._texture = texture;
     sprite._size = size or luajogo.vec2(w, h);
-    sprite._pos = position or luajogo.vec3();
+    sprite._pos = position or luajogo.vec2();
     sprite._rot = rotation or 0;
     sprite._pivot = luajogo.vec2();
     sprite._color = luajogo.color("white");
