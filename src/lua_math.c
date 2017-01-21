@@ -54,6 +54,7 @@ int lua_math_vec##n##_dot(lua_State *L)\
 int lua_math_vec##n##_normalize(lua_State *L)\
 {\
     vec##n *v = lua_math_vec##n##_check(L, 1);\
+    if(vec##n##_len(v) == 0) return 0;\
     vec##n##_norm(v, v);\
     return 0;\
 }\
@@ -62,7 +63,10 @@ int lua_math_vec##n##_normalized(lua_State *L)\
 {\
     const vec##n *v1 = lua_math_vec##n##_check(L, 1);\
     vec##n v;\
-    vec##n##_norm(v, v1);\
+    if(vec##n##_len(v1) != 0)\
+        vec##n##_norm(v, v1);\
+    else\
+        memset(v, 0, sizeof(vec##n));\
     lua_math_vec##n##_push(L, v);\
     return 1;\
 }\
@@ -72,8 +76,8 @@ int lua_math_vec##n##_equals(lua_State *L)\
     const vec##n *v1 = lua_math_vec##n##_check(L, 1);\
     const vec##n *v2 = lua_math_vec##n##_check(L, 2);\
     int is_equal = 1;\
-    for(int i = 0; i < 3; i++) {\
-        if(v1[i] != v2[i]) {\
+    for(int i = 0; i < n; i++) {\
+        if((*v1)[i] != (*v2)[i]) {\
             is_equal = 0;\
             break;\
         }\

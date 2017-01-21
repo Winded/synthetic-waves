@@ -11,19 +11,19 @@ BB.__metatable = BB;
 BB.__type = "BoundingBox";
 
 function BB:position()
-    return self._pos;
+    return self._pos * 1;
 end
 
 function BB:setPosition(position)
-    self._pos = position;
+    self._pos = position * 1;
 end
 
 function BB:size()
-    return self._size;
+    return self._size * 1;
 end
 
 function BB:setSize(size)
-    self._size = size;
+    self._size = size * 1;
 end
 
 function BB:layers()

@@ -2,10 +2,14 @@ include("../lj2d/main.lua");
 
 include("spriteanimation.lua");
 include("aabb.lua");
+include("character.lua");
 
-local s1, s2;
+local LAYER_WORLD = 1;
+local LAYER_PLAYER = 2;
+local LAYER_PROJECTILE = 3;
+local LAYER_ENEMY = 4;
 
-local b1, b2;
+local player;
 
 function lj2d.load()
     luajogo.assets.configure({
@@ -15,59 +19,67 @@ function lj2d.load()
     });
     lj2d.window.setTitle("W A P O R W A V E");
 
-    local texture = luajogo.texture.load(luajogo.assets.load("/tileset.png"));
+    local texture = luajogo.texture.load(luajogo.assets.load("/topdown/Spritesheet/spritesheet_characters.png"));
 
     local sprite = lj2d.graphics.createSprite(texture);
     sprite:setPivot(luajogo.vec2(0.5, 0.5));
-    s1 = SpriteAnimation.create(sprite, {
-        { time = 1, region = { position = luajogo.vec2(0, 0), size = luajogo.vec2(16, 16) } },
-        { time = 1, region = { position = luajogo.vec2(16, 16), size = luajogo.vec2(16, 16) } },
-    });
-    s1:setLoop(true);
-    s1:play();
-    
-    sprite = lj2d.graphics.createSprite(texture);
-    sprite:setPivot(luajogo.vec2(0.5, 0.5));
-    s2 = SpriteAnimation.create(sprite, {
-        { time = 1.5, region = { position = luajogo.vec2(0, 0), size = luajogo.vec2(16, 16) } },
-        { time = 0.5, region = { position = luajogo.vec2(16, 16), size = luajogo.vec2(16, 16) } },
-    });
-    s2:setLoop(true);
-    s2:play();
 
-    b1 = AABB.createBox(luajogo.vec2(200, 200), luajogo.vec2(100, 100), {1});
-    b2 = AABB.createBox(luajogo.vec2(300, 300), luajogo.vec2(100, 100), {1});
+    local anims = {
+        idle = SpriteAnimation.create(sprite, {
+            {time = 1, region = { position = luajogo.vec2(215, 0), size = luajogo.vec2(46, 44) } },
+        }),
+        move = SpriteAnimation.create(sprite, {
+            {time = 1, region = { position = luajogo.vec2(303, 43), size = luajogo.vec2(46, 44) } },
+        }),
+    };
+    anims.idle:setLoop(true);
+    anims.move:setLoop(true);
+
+    player = Character.create(sprite, anims, luajogo.vec2(), luajogo.vec2(50, 43), {LAYER_WORLD, LAYER_PLAYER});
+    player:setMoveSpeed(50);
+
+    lj2d.graphics.camera.setPosition(luajogo.vec2(0, 0));
 end
 
 function lj2d.update(deltaTime)
-    s1:update(deltaTime);
-    s2:update(deltaTime);
-
-    s1:sprite():setPosition(b1:position());
-    s1:sprite():setSize(b1:size());
-    s2:sprite():setPosition(b2:position());
-    s2:sprite():setSize(b2:size());
+    player:update(deltaTime);
 end
 
 function lj2d.keyDown(keycode)
     if keycode == "W" then
-        b1:move(luajogo.vec2(0, 10));
+        player:setMoveInput(luajogo.vec2(player:moveInput().x, 1));
     elseif keycode == "S" then
-        b1:move(luajogo.vec2(0, -10));
-    elseif keycode == "D" then
-        b1:move(luajogo.vec2(10, 0));
-    elseif keycode == "A" then
-        b1:move(luajogo.vec2(-10, 0));
+        player:setMoveInput(luajogo.vec2(player:moveInput().x, -1));
     end
+    if keycode == "D" then
+        player:setMoveInput(luajogo.vec2(1, player:moveInput().y));
+    elseif keycode == "A" then
+        player:setMoveInput(luajogo.vec2(-1, player:moveInput().y));
+    end
+end
+
+function lj2d.keyUp(keycode)
+    if keycode == "W" or keycode == "S" then
+        player:setMoveInput(luajogo.vec2(player:moveInput().x, 0));
+    end
+    if keycode == "D" or keycode == "A" then
+        player:setMoveInput(luajogo.vec2(0, player:moveInput().y));
+    end
+end
+
+function lj2d.mouseMove(delta)
+    local worldPos = lj2d.graphics.camera.screenToWorldPosition(lj2d.input.mousePosition());
+    local delta = worldPos - player:position();
+    local angle = math.atan2(delta.y, delta.x) * luajogo.RAD2DEG;
+    player:setRotation(angle);
 end
 
 function lj2d.draw()
     lj2d.graphics.clear(luajogo.color(0, 0, 0, 255));
 
-    s1:sprite():draw();
-    s2:sprite():draw();
+    player:draw();
 end
 
 function lj2d.quit()
-    s1:destroy();
+    player:destroy();
 end

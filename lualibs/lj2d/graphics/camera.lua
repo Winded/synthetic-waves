@@ -70,3 +70,17 @@ end
 function camera.zoom()
     return camera._zoom;
 end
+
+function camera.screenToWorldPosition(screenPos)
+    local screenRes = lj2d.window.size();
+    local screenNorm = luajogo.vec2();
+    screenNorm.x = (screenPos.x / screenRes.x) * 2 - 1;
+    screenNorm.y = -((screenPos.y / screenRes.y) * 2 - 1);
+
+    local worldPos = camera._viewMat:inverted() * luajogo.vec4(screenNorm.x, screenNorm.y, 0, 1);
+    return luajogo.vec2(worldPos.x, worldPos.y);
+end
+
+function camera.worldToScreenPosition(worldPos)
+    -- todo
+end
