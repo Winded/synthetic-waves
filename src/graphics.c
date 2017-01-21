@@ -534,13 +534,13 @@ int graphics_vertex_array_use(int handle)
     glBindBuffer(GL_ARRAY_BUFFER, va->vbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, va->ebo);
     int totalAttribSize = 0;
-    for(int i = 0; i < MAX_VERTEX_ARRAYS; i++) {
+    for(int i = 0; i < MAX_VERTEX_ARRAY_ATTRIBUTES; i++) {
         vertex_array_attribute *att = &(va->attributes[i]);
         if(!att->is_valid) continue;
         totalAttribSize += att->size;
     }
     int offset = 0;
-    for(int i = 0; i < MAX_VERTEX_ARRAYS; i++) {
+    for(int i = 0; i < MAX_VERTEX_ARRAY_ATTRIBUTES; i++) {
         vertex_array_attribute *att = &(va->attributes[i]);
         if(!att->is_valid) continue;
         glVertexAttribPointer(att->id, att->size, GL_FLOAT, GL_FALSE, totalAttribSize * sizeof(float), (GLvoid*)(offset * sizeof(float)));
@@ -550,6 +550,7 @@ int graphics_vertex_array_use(int handle)
     element_size = va->element_size;
     GLenum err = glGetError();
     if(err != GL_FALSE) {
+        fprintf(stderr, "Failed to bind vertex array: %s\n", glGetString(err));
         return 0;
     }
 #elif defined(USE_DIRECTX)
